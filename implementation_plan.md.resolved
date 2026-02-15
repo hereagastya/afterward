@@ -1,0 +1,81 @@
+# Implementation Plan - Decision Regret Simulator
+
+## Goal Description
+Build a "Decision Regret Simulator" SaaS that uses AI to generate emotional, vivid regret scenarios for user-inputted decisions. The goal is to sell clarity through discomfort, targeting overthinkers in Tier-1 countries.
+
+## User Review Required
+- **Authentication**: Usage limits and Saving History require user identification. I plan to use **Clerk** for authentication as it's fast to integrate with Next.js and secure, unless specified otherwise.
+- **AI Model**: Will use OpenAI `gpt-4o` or `gpt-3.5-turbo` depending on cost/quality balance for "vivid" writing.
+
+## Proposed Changes
+
+### Tech Stack
+- **Frontend**: Next.js 14+ (App Router), React, Tailwind CSS, Framer Motion, shadcn/ui.
+- **Backend**: Next.js Server Actions / API Routes.
+- **Database**: PostgreSQL (via Neon or similar provider, managed locally for now if needed?) with Prisma ORM.
+- **AI**: OpenAI API.
+- **Payments**: Stripe.
+
+### Architecture
+- `app/`: App router pages.
+- `components/`: Reusable UI components.
+    - `ui/`: shadcn primitives.
+    - `simulation/`: Specific components for the simulator (Input, Output, History).
+- `lib/`: Utilities (OpenAI client, Prisma client, Helper functions).
+- `actions/`: Server actions for DB interactions and AI calls.
+
+### Database Schema (Prisma)
+#### [NEW] [schema.prisma](file:///app/prisma/schema.prisma)
+```prisma
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  stripeCustomerId String?
+  isPro         Boolean  @default(false)
+  decisions     Decision[]
+  createdAt     DateTime @default(now())
+}
+
+model Decision {
+  id          String   @id @default(cuid())
+  userId      String?
+  query       String   // The decision text
+  context     String?
+  createdAt   DateTime @default(now())
+  simulations Simulation[]
+}
+
+model Simulation {
+  id          String   @id @default(cuid())
+  decisionId  String
+  decision    Decision @relation(fields: [decisionId], references: [id])
+  shortTerm   String   // JSON or Text
+  longTerm    String   // JSON or Text
+  coreFeeling String
+  createdAt   DateTime @default(now())
+}
+```
+
+### Core Components
+
+#### Landing Page
+- Minimalist, high-contrast emotional hook.
+- "Enter your dilemma" input immediately visible or easily accessible.
+
+#### Simulator Logic
+- Input: User text -> API -> OpenAI (System prompt: "You are a regret simulator...") -> JSON Response -> Frontend Render.
+
+#### Payments
+- Simple Stripe Checkout link for "Pro" access.
+- Webhook listener to update `User.isPro`.
+
+## Verification Plan
+
+### Automated Tests
+- Basic smoke tests for API routes.
+- Linting and build check.
+
+### Manual Verification
+- **Input Flow**: Enter a decision -> Verify AI generates output -> Verify output is "emotional" and formatted correctly.
+- **Free Limits**: Try to run >X simulations -> Verify block.
+- **Pro Upgrade**: Test Stripe test mode flow -> Verify status update -> Verify unlimited access.

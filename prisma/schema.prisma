@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url  	    = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+model User {
+  id               String     @id @default(cuid())
+  clerkId          String     @unique
+  email            String     @unique
+  stripeCustomerId String?
+  isPro            Boolean    @default(false)
+  decisions        Decision[]
+  createdAt        DateTime   @default(now())
+}
+
+model Decision {
+  id              String           @id @default(cuid())
+  userId          String?
+  user            User?            @relation(fields: [userId], references: [id])
+  query           String           // The original decision text
+  context         String?          // Parsed context (e.g., "job change + entrepreneurship")
+  userChoice      String?          // "go" | "stay" | "undecided" | null
+  status          String?          @default("active") // "active" | "resolved" | "archived"
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  simulations     Simulation[]
+  questionAnswers QuestionAnswer[]
+  flashcards      Flashcard[]
+  checkIns        CheckIn[]
+}
+
+model QuestionAnswer {
+  id         String   @id @default(cuid())
+  decisionId String
+  decision   Decision @relation(fields: [decisionId], references: [id], onDelete: Cascade)
+  question   String
+  answer     String
+  order      Int      // Question order (1-8)
+  createdAt  DateTime @default(now())
+}
+
+model Simulation {
+  id          String   @id @default(cuid())
+  decisionId  String
+  decision    Decision @relation(fields: [decisionId], references: [id], onDelete: Cascade)
+  pathType    String   // "go" | "stay"
+  phases      Json     // Array of TimelinePhase objects
+  createdAt   DateTime @default(now())
+}
+
+model Flashcard {
+  id         String   @id @default(cuid())
+  decisionId String
+  decision   Decision @relation(fields: [decisionId], references: [id], onDelete: Cascade)
+  pathType   String   // "go" or "stay"
+  data       Json     // FlashcardData object
+  order      Int
+  createdAt  DateTime @default(now())
+}
+
+model CheckIn {
+  id           String    @id @default(cuid())
+  decisionId   String
+  decision     Decision  @relation(fields: [decisionId], references: [id], onDelete: Cascade)
+  prompt       String    // The check-in question
+  response     String?   // User's response
+  scheduledFor DateTime
+  completedAt  DateTime?
+  createdAt    DateTime  @default(now())
+}
