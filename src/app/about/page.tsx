@@ -37,7 +37,7 @@ export default function AboutPage() {
           <div className="pt-8 flex flex-col sm:flex-row gap-4 justify-center">
             
             <a
-              href="https://twitter.com/yourusername" // Replace with your actual X/Twitter handle
+              href="https://x.com/visionary_comer/" // Replace with your actual X/Twitter handle
               target="_blank"
               rel="noopener noreferrer"
               className="px-8 py-3 bg-gradient-to-r from-[#8B6FD4] to-[#B794F4] text-white rounded-lg hover:shadow-[0_0_20px_rgba(139,111,212,0.4)] transition-all font-semibold text-center"

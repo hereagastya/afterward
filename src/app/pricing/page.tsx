@@ -95,9 +95,15 @@ export default function PricingPage() {
               </li>
             </ul>
 
-            <button className="w-full py-3 px-6 bg-gradient-to-r from-[#8B6FD4] to-[#B794F4] text-white rounded-lg hover:shadow-[0_0_20px_rgba(139,111,212,0.4)] transition-all font-semibold">
-              Upgrade to Pro
+            <button
+              disabled
+              className="w-full py-3 px-6 bg-gradient-to-r from-[#8B6FD4]/40 to-[#B794F4]/40 text-white/60 rounded-lg font-semibold cursor-not-allowed"
+            >
+              Coming Soon
             </button>
+            <p className="text-center text-sm mt-4" style={{ color: '#B794F4' }}>
+              Paid plans launching next week. Early access users get 50% off!
+            </p>
           </div>
         </div>
 

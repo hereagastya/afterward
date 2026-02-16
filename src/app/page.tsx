@@ -8,6 +8,7 @@ import { DualPathSimulation } from "@/components/simulation/dual-path-simulation
 import { FlashcardViewer } from "@/components/simulation/flashcard-viewer"
 import { DecisionPrompt } from "@/components/simulation/decision-prompt"
 import { SaveConfirmation } from "@/components/simulation/save-confirmation"
+import { FeedbackPopup } from "@/components/feedback-popup"
 import { Navbar } from "@/components/navbar"
 import { 
   FlowState, 
@@ -32,6 +33,8 @@ export default function Home() {
   const [userChoice, setUserChoice] = useState<UserChoice | null>(null)
   const [error, setError] = useState("")
   const [messageIndex, setMessageIndex] = useState(0)
+  const [savedDecisionId, setSavedDecisionId] = useState<string | null>(null)
+  const [showFeedback, setShowFeedback] = useState(false)
 
   const { isSignedIn, isLoaded } = useAuth()
   const { user } = useUser()
@@ -163,19 +166,33 @@ export default function Home() {
         })
 
         if (!res.ok) {
-          console.error("Failed to save decision")
           const data = await res.json()
+          if (res.status === 429 && data.error === 'rate_limit_exceeded') {
+            setError(data.message)
+            return
+          }
+          console.error("Failed to save decision")
           setError(data.error || "Failed to save decision. Please check your connection.")
-          return // Stop here
+          return
+        }
+
+        const data = await res.json()
+        if (data.decisionId) {
+          setSavedDecisionId(data.decisionId)
         }
       } catch (err) {
         console.error("Save error:", err)
         setError("Network error. Could not save decision.")
-        return // Stop here
+        return
       }
     }
 
     setFlowState("saved")
+
+    // Show feedback popup 2 seconds after reaching saved state
+    setTimeout(() => {
+      setShowFeedback(true)
+    }, 2000)
   }
 
   // Reset everything
@@ -187,6 +204,8 @@ export default function Home() {
     setFlashcards(null)
     setUserChoice(null)
     setError("")
+    setSavedDecisionId(null)
+    setShowFeedback(false)
   }
 
   // Go back to questions from simulating
@@ -372,6 +391,15 @@ export default function Home() {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Feedback Popup */}
+      {savedDecisionId && (
+        <FeedbackPopup
+          decisionId={savedDecisionId}
+          isOpen={showFeedback}
+          onClose={() => setShowFeedback(false)}
+        />
+      )}
     </main>
   )
 }
