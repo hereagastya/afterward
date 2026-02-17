@@ -57,6 +57,7 @@ export interface FlashcardData {
   likelihood: "high" | "medium" | "low"
   emojiBefore: string
   emojiAfter: string
+  _id?: number // For internal UI keys
 }
 
 export interface FlashcardSet {
