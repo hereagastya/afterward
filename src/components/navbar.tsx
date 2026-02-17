@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react"
 import { SignInButton, SignUpButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs"
 import Link from "next/link"
+import { MobileMenu } from "./mobile-menu"
+
 
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false)
@@ -83,7 +85,11 @@ export function Navbar() {
             </SignUpButton>
           </SignedOut>
         </div>
+
+        {/* Mobile Menu */}
+        <MobileMenu />
       </div>
+
     </nav>
   )
 }

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { DualPathSimulationData, TimelineSimulation } from "@/lib/types"
 import { MomentCard } from "./moment-card"
 import { cn } from "@/lib/utils"
+import { ArrowLeftRight, Clock, MapPin } from "lucide-react"
 
 interface TimelineViewProps {
   simulation: DualPathSimulationData
@@ -10,101 +11,138 @@ interface TimelineViewProps {
 }
 
 export function TimelineView({ simulation, onReflect }: TimelineViewProps) {
-  const [activePath, setActivePath] = useState<"go" | "stay">("go")
-
-  // For mobile, we toggle. For desktop, we might want side-by-side, but let's stick to a clean toggle view for now for focus, or side-by-side if screen is large.
-  // Actually, side-by-side is better for comparison.
+  const [activeTab, setActiveTab] = useState<"go" | "stay">("go")
 
   return (
-    <div className="w-full max-w-6xl mx-auto px-4 py-8">
+    <div className="w-full max-w-7xl mx-auto px-4 py-12 md:py-20">
       
-      {/* Introduction */}
+      {/* Cinematic Header */}
       <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="text-center mb-12"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-center mb-16 space-y-4"
       >
-        <h2 className="text-3xl font-light text-white mb-4">Your Two Futures</h2>
-        <p className="text-gray-400">Witness the trajectory of your choice.</p>
+        <span className="text-xs font-[var(--font-mono)] text-[var(--accent-glow)] tracking-[0.3em] uppercase">
+            Temporal Simulation Complete
+        </span>
+        <h2 className="text-4xl md:text-5xl lg:text-6xl font-[var(--font-playfair)] text-white">
+          Two Futures Diverge
+        </h2>
+        <p className="text-[var(--text-secondary)] max-w-xl mx-auto text-lg pt-2 leading-relaxed">
+          Witness the trajectory of your potential timelines. Where does each path lead?
+        </p>
       </motion.div>
 
-      {/* Desktop View: Side-by-Side */}
-      <div className="hidden md:grid grid-cols-2 gap-8 relative">
-        {/* Divider */}
-        <div className="absolute top-0 bottom-0 left-1/2 w-px bg-white/5 -translate-x-1/2" />
-
-        <TimelineColumn simulation={simulation.pathA} pathType="go" />
-        <TimelineColumn simulation={simulation.pathB} pathType="stay" />
-      </div>
-
-      {/* Mobile View: Toggle */}
-      <div className="md:hidden">
-        <div className="flex bg-white/5 p-1 rounded-xl mb-8">
+      {/* Mobile Toggle (Visible < 1024px) */}
+      <div className="lg:hidden sticky top-20 z-30 mb-8 backdrop-blur-xl bg-black/40 p-2 rounded-2xl border border-white/10 shadow-xl max-w-md mx-auto">
+        <div className="grid grid-cols-2 gap-2 relative">
+           {/* Slider Background */}
+           <motion.div 
+             className={cn("absolute inset-y-0 w-1/2 bg-white/10 rounded-xl border border-white/10 shadow-lg")}
+             animate={{ x: activeTab === "go" ? "0%" : "100%" }}
+             transition={{ type: "spring", stiffness: 300, damping: 30 }}
+           />
+           
           <button 
-            onClick={() => setActivePath("go")}
+            onClick={() => setActiveTab("go")}
             className={cn(
-              "flex-1 py-2 text-sm font-medium rounded-lg transition-all",
-              activePath === "go" ? "bg-emerald-500/20 text-emerald-300" : "text-gray-400 hover:text-white"
+              "relative z-10 py-3 text-sm font-medium rounded-xl transition-colors duration-300 flex items-center justify-center gap-2",
+              activeTab === "go" ? "text-emerald-300" : "text-gray-400"
             )}
           >
+            <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.5)]"></span>
             If You Go
           </button>
           <button 
-            onClick={() => setActivePath("stay")}
+            onClick={() => setActiveTab("stay")}
             className={cn(
-              "flex-1 py-2 text-sm font-medium rounded-lg transition-all",
-              activePath === "stay" ? "bg-indigo-500/20 text-indigo-300" : "text-gray-400 hover:text-white"
+              "relative z-10 py-3 text-sm font-medium rounded-xl transition-colors duration-300 flex items-center justify-center gap-2",
+              activeTab === "stay" ? "text-indigo-300" : "text-gray-400"
             )}
           >
+             <span className="w-2 h-2 rounded-full bg-indigo-400 shadow-[0_0_10px_rgba(129,140,248,0.5)]"></span>
             If You Stay
           </button>
         </div>
+      </div>
 
+      {/* Desktop Layout (Side by Side) */}
+      <div className="hidden lg:grid grid-cols-2 gap-12 relative items-start">
+         {/* Central Divider */}
+         <div className="absolute top-0 bottom-0 left-1/2 w-px bg-gradient-to-b from-transparent via-white/10 to-transparent -translate-x-1/2" />
+         
+         {/* Floating Label Logic could go here, but stick to columns */}
+         <TimelineColumn simulation={simulation.pathA} pathType="go" />
+         <TimelineColumn simulation={simulation.pathB} pathType="stay" />
+      </div>
+
+      {/* Mobile Layout (Tabbed) */}
+      <div className="lg:hidden">
         <AnimatePresence mode="wait">
-          <motion.div
-            key={activePath}
-            initial={{ opacity: 0, x: activePath === "go" ? -20 : 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: activePath === "go" ? 20 : -20 }}
-            transition={{ duration: 0.3 }}
-          >
-            {activePath === "go" ? (
+          {activeTab === "go" ? (
+            <motion.div
+              key="go"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.3 }}
+            >
               <TimelineColumn simulation={simulation.pathA} pathType="go" />
-            ) : (
+            </motion.div>
+          ) : (
+            <motion.div
+              key="stay"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+            >
               <TimelineColumn simulation={simulation.pathB} pathType="stay" />
-            )}
-          </motion.div>
+            </motion.div>
+          )}
         </AnimatePresence>
       </div>
 
-      <div className="mt-16 text-center">
+      <div className="mt-24 text-center">
         <button
           onClick={onReflect}
-          className="px-8 py-4 bg-white/10 hover:bg-white/20 text-white rounded-full font-medium transition-all hover:scale-105 backdrop-blur-md border border-white/10"
+          className="group relative inline-flex items-center justify-center px-10 py-5 bg-[var(--bg-elevated)] border border-[var(--border-glow)] text-white rounded-full font-[var(--font-mono)] uppercase tracking-widest text-xs transition-all duration-300 hover:scale-105 hover:bg-[var(--accent-primary)] hover:border-transparent hover:shadow-[0_0_40px_rgba(124,92,191,0.4)]"
         >
-          I've seen enough. Show me the regrets.
+          <span className="mr-3">I have seen enough</span>
+          <ArrowLeftRight className="w-4 h-4 group-hover:rotate-180 transition-transform duration-500" />
         </button>
+        <p className="mt-4 text-xs text-gray-500 font-mono">
+            Proceed to the regret analysis
+        </p>
       </div>
     </div>
   )
 }
 
 function TimelineColumn({ simulation, pathType }: { simulation: TimelineSimulation, pathType: "go" | "stay" }) {
+    const isGo = pathType === "go"
+    const colorClass = isGo ? "text-emerald-400" : "text-indigo-400"
+    const bgClass = isGo ? "bg-emerald-500/10 border-emerald-500/20" : "bg-indigo-500/10 border-indigo-500/20"
+
   return (
-    <div className="space-y-6">
-      <div className="mb-8 text-center md:text-left p-4 rounded-xl bg-white/5 border border-white/5">
-        <h3 className={cn("text-xl font-medium mb-1", pathType === "go" ? "text-emerald-400" : "text-indigo-400")}>
+    <div className="space-y-8">
+      {/* Column Header */}
+      <div className={cn("text-center p-6 rounded-2xl border backdrop-blur-sm sticky top-24 z-20 lg:static lg:bg-transparent lg:border-none lg:backdrop-filter-none lg:p-0 mb-12", bgClass)}>
+        <h3 className={cn("text-3xl font-[var(--font-playfair)] mb-2", colorClass)}>
           {simulation.pathTitle}
         </h3>
-        <p className="text-xs text-gray-500 uppercase tracking-wider">The Trajectory</p>
+        <p className="text-xs text-gray-400 uppercase tracking-widest font-[var(--font-mono)]">The Trajectory</p>
       </div>
 
-      <div className="space-y-6 relative">
-        {/* Connecting Line (visual only, simplified) */}
-        <div className="absolute left-6 top-6 bottom-6 w-px bg-white/5 md:left-8 z-0" />
+      <div className="space-y-4 relative pl-4 lg:pl-0">
+        {/* Connecting Line */}
+        <div className={cn("absolute left-[2.25rem] lg:left-8 top-8 bottom-8 w-px", isGo ? "bg-gradient-to-b from-emerald-500/20 via-emerald-500/50 to-transparent" : "bg-gradient-to-b from-indigo-500/20 via-indigo-500/50 to-transparent")} />
         
         {simulation.phases.map((phase, idx) => (
-          <div key={idx} className="relative z-10 pl-2">
+          <div key={idx} className="relative z-10 pl-6 lg:pl-8">
+             {/* Timeline Dot */}
+             <div className={cn("absolute left-0 top-8 w-4 h-4 rounded-full border-2 bg-[#0a0a0c]", isGo ? "border-emerald-500" : "border-indigo-500")} />
+             
             <MomentCard phase={phase} pathType={pathType} index={idx} />
           </div>
         ))}

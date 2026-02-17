@@ -3,55 +3,67 @@ import Link from "next/link"
 
 export default function AboutPage() {
   return (
-    <main className="flex min-h-screen flex-col items-center p-6 md:p-24 bg-[#0a0a0c] relative overflow-hidden">
-      {/* Background Glow */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-indigo-500/5 rounded-full blur-3xl pointer-events-none" />
+    <main className="flex min-h-screen flex-col items-center bg-[#07070a] relative overflow-hidden">
+      {/* Background Decor */}
+      <div className="fixed inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-5 pointer-events-none mix-blend-overlay" />
+      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-purple-900/10 rounded-full blur-[120px] pointer-events-none" />
 
       <Navbar />
 
-      <div className="relative z-20 max-w-3xl mx-auto mt-32 w-full">
-        <div className="text-center mb-12">
-          <h1 className="text-5xl md:text-6xl font-light text-white mb-6">
-            Built by Agastya Sharma
+      <div className="relative z-20 max-w-4xl mx-auto pt-32 pb-20 px-6 w-full">
+        <div className="text-center mb-16">
+          <span className="text-xs font-[var(--font-mono)] text-[var(--accent-glow)] tracking-[0.3em] uppercase mb-4 block">
+            The Architect
+          </span>
+          <h1 className="text-5xl md:text-7xl font-[var(--font-playfair)] text-white mb-8">
+            Built by <span className="italic text-[var(--accent-bright)]">Agastya Sharma</span>
           </h1>
         </div>
 
-        <div className="glass p-8 md:p-12 rounded-2xl space-y-6 text-gray-300 leading-relaxed">
-          <p className="text-lg">
-            I built <span className="text-white font-semibold">Afterward.</span> because I was tired of making big decisions based on spreadsheets and pros/cons lists that completely ignored how I'd actually <em>feel</em> about my choices months later.
-          </p>
-
-          <p>
-            Logic can tell you the "right" answer. But it can't tell you what it feels like to wake up at 3am regretting the path you chose — or regretting the one you didn't take.
-          </p>
-
-          <p>
-            This tool exists to bridge that gap. It's not here to validate you or make you feel good. It's here to show you the uncomfortable truth of both paths before you commit to one.
-          </p>
-
-          <p className="text-gray-400 text-sm pt-4">
-            Currently working on new AI products and sharing the journey on X.
-          </p>
-
-          {/* Social Links */}
-          <div className="pt-8 flex flex-col sm:flex-row gap-4 justify-center">
+        <div className="relative">
+            {/* Glass Container */}
+            <div className="absolute inset-0 bg-white/[0.02] backdrop-blur-md rounded-3xl border border-white/5 -rotate-1 scale-[1.02]" />
             
-            <a
-              href="https://x.com/visionary_comer/" // Replace with your actual X/Twitter handle
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-8 py-3 bg-gradient-to-r from-[#8B6FD4] to-[#B794F4] text-white rounded-lg hover:shadow-[0_0_20px_rgba(139,111,212,0.4)] transition-all font-semibold text-center"
-            >
-              Follow my journey on X →
-            </a>
+            <div className="relative bg-[#0f0f14]/80 p-8 md:p-16 rounded-3xl border border-white/10 space-y-8 text-lg font-light leading-loose text-gray-300 shadow-2xl">
+            <p>
+                I built <span className="text-white font-medium">Afterward.</span> for a simple reason: <strong className="text-white font-normal">Spreadsheets lie.</strong>
+            </p>
 
-            <Link
-              href="/"
-              className="px-8 py-3 border border-white/20 text-white rounded-lg hover:bg-white/5 transition-all text-center"
-            >
-              Try Afterward.
-            </Link>
-          </div>
+            <p>
+                When we make big life decisions, we tend to over-index on logic. We list pros and cons. We calculate ROI. We try to outsmart the future.
+            </p>
+
+            <p>
+                But logic doesn't wake up at 3am with a pit in its stomach. Logic doesn't feel the weight of "what if."
+            </p>
+            
+            <p>
+                I wanted to build something that forced me to confront the <em>emotional</em> reality of my choices, not just the logical one. A tool that acts like a mirror to the future, showing you the regret you're trying to ignore.
+            </p>
+
+            <div className="border-t border-white/10 pt-8 mt-12">
+                <p className="text-sm font-[var(--font-mono)] text-gray-500 mb-6">
+                    CONNECT WITH ME
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4">
+                    <a
+                        href="https://x.com/visionary_comer/" 
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-8 py-4 bg-white text-black rounded-lg hover:shadow-[0_0_30px_rgba(255,255,255,0.3)] transition-all font-medium text-center hover:-translate-y-1"
+                    >
+                    Follow on X (Twitter)
+                    </a>
+
+                    <Link
+                    href="/"
+                    className="px-8 py-4 border border-white/10 text-white rounded-lg hover:bg-white/5 transition-all text-center"
+                    >
+                    Simulate a Decision
+                    </Link>
+                </div>
+            </div>
+            </div>
         </div>
       </div>
     </main>
