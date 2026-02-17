@@ -47,7 +47,7 @@ export default function AboutPage() {
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4">
                     <a
-                        href="https://x.com/visionary_comer/" 
+                        href="https://x.com/agastyabuilds" 
                         target="_blank"
                         rel="noopener noreferrer"
                         className="px-8 py-4 bg-white text-black rounded-lg hover:shadow-[0_0_30px_rgba(255,255,255,0.3)] transition-all font-medium text-center hover:-translate-y-1"
