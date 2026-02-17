@@ -1,75 +1,89 @@
 "use client"
 
-import { SignInButton, SignUpButton, SignedIn, SignedOut, UserButton, useUser } from "@clerk/nextjs"
+import { useState, useEffect } from "react"
+import { SignInButton, SignUpButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs"
 import Link from "next/link"
 
 export function Navbar() {
-  const { user, isLoaded } = useUser()
+  const [scrolled, setScrolled] = useState(false)
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 50)
+    }
+    window.addEventListener("scroll", handleScroll, { passive: true })
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
 
   return (
-    <div className="z-10 w-full max-w-6xl items-center justify-between font-mono text-sm lg:flex lg:absolute lg:top-10 lg:px-10">
-      {/* Logo */}
-      <Link 
-        href="/"
-        className="fixed left-0 top-0 flex w-full justify-center border-b border-white/5 bg-black/50 pb-6 pt-8 backdrop-blur-md lg:static lg:w-auto lg:border-none lg:bg-transparent lg:p-0 text-white/90 tracking-widest text-xs font-light hover:text-white transition-colors"
-      >
-        AFTERWARD.
-      </Link>
+    <nav
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-out ${
+        scrolled
+          ? "bg-[rgba(7,7,10,0.85)] backdrop-blur-2xl border-b border-[rgba(124,92,191,0.1)]"
+          : "bg-transparent border-b border-transparent"
+      }`}
+    >
+      <div className="max-w-7xl mx-auto px-6 md:px-10 h-16 flex items-center justify-between">
+        {/* Left: Logo */}
+        <Link
+          href="/"
+          className="font-[var(--font-dm-mono)] text-[var(--text-primary)] tracking-[0.25em] text-xs font-medium hover:text-[var(--accent-bright)] transition-colors duration-300"
+        >
+          AFTERWARD.
+        </Link>
 
-      {/* Nav Links */}
-      <div className="fixed top-24 right-10 lg:static flex items-center space-x-6">
-        {/* My Decisions - only show if signed in */}
-        <SignedIn>
-          <Link 
-            href="/dashboard"
-            className="text-gray-400 hover:text-white transition-colors text-sm"
-          >
-            My Decisions
-          </Link>
-        </SignedIn>
-
-        {/* My Decisions - trigger sign in if not signed in */}
-        <SignedOut>
-          <SignInButton mode="modal">
-            <button className="text-gray-400 hover:text-white transition-colors text-sm">
+        {/* Center: Nav Links */}
+        <div className="hidden md:flex items-center gap-8">
+          <SignedIn>
+            <Link
+              href="/dashboard"
+              className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors duration-300 text-sm tracking-wide"
+            >
               My Decisions
-            </button>
-          </SignInButton>
-        </SignedOut>
+            </Link>
+          </SignedIn>
+          <SignedOut>
+            <SignInButton mode="modal">
+              <button className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors duration-300 text-sm tracking-wide">
+                My Decisions
+              </button>
+            </SignInButton>
+          </SignedOut>
 
-        {/* Pricing */}
-        <Link 
-          href="/pricing"
-          className="text-gray-400 hover:text-white transition-colors text-sm"
-        >
-          Pricing
-        </Link>
+          <Link
+            href="/pricing"
+            className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors duration-300 text-sm tracking-wide"
+          >
+            Pricing
+          </Link>
 
-        {/* About */}
-        <Link 
-          href="/about"
-          className="text-gray-400 hover:text-white transition-colors text-sm"
-        >
-          About
-        </Link>
+          <Link
+            href="/about"
+            className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors duration-300 text-sm tracking-wide"
+          >
+            About
+          </Link>
+        </div>
 
-        {/* Auth Buttons */}
-        <SignedIn>
-          <UserButton afterSignOutUrl="/" />
-        </SignedIn>
-        <SignedOut>
-          <SignInButton mode="modal">
-            <button className="text-gray-400 hover:text-white transition-colors text-sm">
-              Sign In
-            </button>
-          </SignInButton>
-          <SignUpButton mode="modal">
-            <button className="px-5 py-2.5 bg-gradient-to-r from-[#8B6FD4] to-[#B794F4] text-white rounded-full text-xs font-bold hover:shadow-[0_0_15px_rgba(139,111,212,0.4)] transition-all duration-300 transform hover:scale-105">
-              Get Started
-            </button>
-          </SignUpButton>
-        </SignedOut>
+        {/* Right: Auth */}
+        <div className="flex items-center gap-4">
+          <SignedIn>
+            <UserButton afterSignOutUrl="/" />
+          </SignedIn>
+          <SignedOut>
+            <SignInButton mode="modal">
+              <button className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors duration-300 text-sm hidden sm:inline-block">
+                Sign In
+              </button>
+            </SignInButton>
+            <SignUpButton mode="modal">
+              <button className="px-5 py-2 bg-gradient-to-r from-[#7c5cbf] to-[#9d7de8] text-white rounded-full text-xs font-bold tracking-wider hover:shadow-[0_0_25px_rgba(124,92,191,0.5)] transition-all duration-300 hover:scale-105">
+                Get Started
+              </button>
+            </SignUpButton>
+          </SignedOut>
+        </div>
       </div>
-    </div>
+    </nav>
   )
 }
