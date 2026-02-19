@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import { gemini } from '@/lib/gemini';
-import { QuestionAnswer, DualPathSimulationData, TimelineSimulation } from '@/lib/types';
+import { QuestionAnswer, DualPathSimulationData } from '@/lib/types';
 import { z } from 'zod';
+import { auth, currentUser } from '@clerk/nextjs/server';
+import { db } from '@/lib/db';
 
 const RequestSchema = z.object({
   decision: z.string().min(5).max(500),
@@ -65,6 +67,78 @@ function formatAnswersForPrompt(answers: QuestionAnswer[]): string {
 
 export async function POST(req: Request) {
   try {
+    const { userId } = await auth();
+    
+    // 1. Rate Limiting Check (Only if user is logged in)
+    // If not logged in, they can't save anyway, but let's restrict generation too or rely on client side?
+    // The prompt implies "User" (likely logged in). If userId exists, we check limits.
+    
+    if (userId) {
+      const user = await db.user.findUnique({
+        where: { clerkId: userId }
+      });
+
+      if (user) {
+        // Daily Limit Logic
+        const now = new Date();
+        const lastDaily = new Date(user.lastDailyReset);
+        const isNewDay = now.getDate() !== lastDaily.getDate() || 
+                         now.getMonth() !== lastDaily.getMonth() || 
+                         now.getFullYear() !== lastDaily.getFullYear();
+        
+        // Monthly Limit Logic
+        const lastMonthly = new Date(user.lastMonthlyReset);
+        const isNewMonth = now.getMonth() !== lastMonthly.getMonth() || 
+                           now.getFullYear() !== lastMonthly.getFullYear();
+
+        let dailyCount = user.dailyDecisionCount;
+        let monthlyCount = user.monthlyDecisionCount;
+
+        // Reset if needed
+        if (isNewDay) {
+          dailyCount = 0;
+          await db.user.update({
+             where: { id: user.id },
+             data: { dailyDecisionCount: 0, lastDailyReset: now }
+          });
+        }
+
+        if (isNewMonth) {
+          monthlyCount = 0;
+          await db.user.update({
+             where: { id: user.id },
+             data: { monthlyDecisionCount: 0, lastMonthlyReset: now }
+          });
+        }
+
+        // Check Limits (2 per day, 10 per month)
+        // Note: isPro check could be added here later
+        if (!user.isPro) {
+            if (dailyCount >= 2) {
+            return NextResponse.json(
+                { error: "Daily limit reached", code: "RATE_LIMIT_DAILY" },
+                { status: 429 }
+            );
+            }
+            if (monthlyCount >= 10) {
+            return NextResponse.json(
+                { error: "Monthly limit reached", code: "RATE_LIMIT_MONTHLY" },
+                { status: 429 }
+            );
+            }
+        }
+        
+        // Increment counts
+        await db.user.update({
+            where: { id: user.id },
+            data: {
+                dailyDecisionCount: dailyCount + 1,
+                monthlyDecisionCount: monthlyCount + 1
+            }
+        });
+      }
+    }
+
     const body = await req.json();
     const result = RequestSchema.safeParse(body);
 
@@ -196,3 +270,4 @@ export async function POST(req: Request) {
     );
   }
 }
+
