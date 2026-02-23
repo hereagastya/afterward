@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 import { gemini } from '@/lib/gemini';
 import { QuestionAnswer, DualPathSimulationData } from '@/lib/types';
 import { z } from 'zod';
-import { auth, currentUser } from '@clerk/nextjs/server';
-import { db } from '@/lib/db';
+import { auth } from '@clerk/nextjs/server';
+import { prisma } from '@/lib/db';
 
 const RequestSchema = z.object({
   decision: z.string().min(5).max(500),
@@ -69,24 +69,22 @@ export async function POST(req: Request) {
   try {
     const { userId } = await auth();
     
-    // 1. Rate Limiting Check (Only if user is logged in)
-    // If not logged in, they can't save anyway, but let's restrict generation too or rely on client side?
-    // The prompt implies "User" (likely logged in). If userId exists, we check limits.
-    
+    // Rate Limiting Check (only for logged-in users)
     if (userId) {
-      const user = await db.user.findUnique({
+      const user = await prisma.user.findUnique({
         where: { clerkId: userId }
       });
 
       if (user) {
-        // Daily Limit Logic
         const now = new Date();
+
+        // Daily reset logic
         const lastDaily = new Date(user.lastDailyReset);
         const isNewDay = now.getDate() !== lastDaily.getDate() || 
                          now.getMonth() !== lastDaily.getMonth() || 
                          now.getFullYear() !== lastDaily.getFullYear();
         
-        // Monthly Limit Logic
+        // Monthly reset logic
         const lastMonthly = new Date(user.lastMonthlyReset);
         const isNewMonth = now.getMonth() !== lastMonthly.getMonth() || 
                            now.getFullYear() !== lastMonthly.getFullYear();
@@ -94,10 +92,10 @@ export async function POST(req: Request) {
         let dailyCount = user.dailyDecisionCount;
         let monthlyCount = user.monthlyDecisionCount;
 
-        // Reset if needed
+        // Reset counters if needed
         if (isNewDay) {
           dailyCount = 0;
-          await db.user.update({
+          await prisma.user.update({
              where: { id: user.id },
              data: { dailyDecisionCount: 0, lastDailyReset: now }
           });
@@ -105,31 +103,30 @@ export async function POST(req: Request) {
 
         if (isNewMonth) {
           monthlyCount = 0;
-          await db.user.update({
+          await prisma.user.update({
              where: { id: user.id },
              data: { monthlyDecisionCount: 0, lastMonthlyReset: now }
           });
         }
 
-        // Check Limits (2 per day, 10 per month)
-        // Note: isPro check could be added here later
+        // Check limits for free users (2/day, 10/month)
         if (!user.isPro) {
             if (dailyCount >= 2) {
-            return NextResponse.json(
-                { error: "Daily limit reached", code: "RATE_LIMIT_DAILY" },
-                { status: 429 }
-            );
+              return NextResponse.json(
+                  { error: "You've reached your daily limit of 2 decisions. Paid plans coming soon!", code: "RATE_LIMIT_DAILY" },
+                  { status: 429 }
+              );
             }
             if (monthlyCount >= 10) {
-            return NextResponse.json(
-                { error: "Monthly limit reached", code: "RATE_LIMIT_MONTHLY" },
-                { status: 429 }
-            );
+              return NextResponse.json(
+                  { error: "You've reached your monthly limit of 10 decisions. Paid plans coming soon!", code: "RATE_LIMIT_MONTHLY" },
+                  { status: 429 }
+              );
             }
         }
         
-        // Increment counts
-        await db.user.update({
+        // Increment counters
+        await prisma.user.update({
             where: { id: user.id },
             data: {
                 dailyDecisionCount: dailyCount + 1,

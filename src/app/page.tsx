@@ -8,6 +8,7 @@ import { FlashcardViewer } from "@/components/simulation/flashcard-viewer"
 import { DecisionPrompt } from "@/components/simulation/decision-prompt"
 import { SaveConfirmation } from "@/components/simulation/save-confirmation"
 import { FeedbackPopup } from "@/components/feedback-popup"
+import { LimitPopup } from "@/components/limit-popup"
 import { Navbar } from "@/components/navbar"
 import { 
   FlowState, 
@@ -87,6 +88,7 @@ export default function Home() {
   const [messageIndex, setMessageIndex] = useState(0)
   const [savedDecisionId, setSavedDecisionId] = useState<string | null>(null)
   const [showFeedback, setShowFeedback] = useState(false)
+  const [showLimitPopup, setShowLimitPopup] = useState(false)
 
   // Hero textarea ref
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -190,6 +192,12 @@ export default function Home() {
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}))
+        // Show popup immediately on rate limit
+        if (res.status === 429) {
+          setShowLimitPopup(true)
+          setFlowState("input")
+          return
+        }
         throw new Error(errorData.error || "Failed to generate simulations")
       }
 
@@ -683,6 +691,12 @@ export default function Home() {
           onClose={() => setShowFeedback(false)}
         />
       )}
+
+      {/* Rate Limit Popup */}
+      <LimitPopup
+        isOpen={showLimitPopup}
+        onClose={() => setShowLimitPopup(false)}
+      />
     </main>
   )
 }
