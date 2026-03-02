@@ -24,6 +24,7 @@ const dmMono = DM_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://afterward.fyi"),
   title: "Afterward — Decision Clarity",
   description:
     "Feel the consequences before they happen. AI-powered decision clarity that shows you both futures.",
@@ -40,13 +41,14 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   openGraph: {
     type: "website",
+    url: "https://afterward.fyi",
     title: "Afterward — Decision Clarity",
     description:
       "Regret is better simulated. Feel the consequences before they happen with AI-powered decision clarity.",
     siteName: "Afterward",
     images: [
       {
-        url: "/og-image.png",
+        url: "https://afterward.fyi/og-image.png",
         width: 1200,
         height: 630,
         alt: "Afterward — Regret is better simulated",
@@ -56,12 +58,13 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
+    site: "@Agastyabuilds",
     title: "Afterward — Decision Clarity",
     description:
       "Regret is better simulated. Feel the consequences before they happen with AI-powered decision clarity.",
     images: [
       {
-        url: "/twitter-image.png",
+        url: "https://afterward.fyi/twitter-image.png",
         width: 1200,
         height: 628,
         alt: "Afterward — Regret is better simulated",
