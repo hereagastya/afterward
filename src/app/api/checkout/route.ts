@@ -43,6 +43,9 @@ export async function POST(req: Request) {
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
+    // GET THE REAL EMAIL FROM CLERK (NOT DATABASE)
+    const realEmail = clerkUser.emailAddresses[0]?.emailAddress || dbUser.email;
+
     // Create a Dodo checkout session
     const session = await dodo.checkoutSessions.create({
       product_cart: [
@@ -52,7 +55,7 @@ export async function POST(req: Request) {
         },
       ],
       customer: {
-        email: dbUser.email,
+        email: realEmail, // ← CHANGED THIS LINE
         name:
           `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() ||
           undefined,
