@@ -31,7 +31,7 @@ export function Navbar() {
           href="/"
           className="font-[var(--font-dm-mono)] text-[var(--text-primary)] tracking-[0.25em] text-xs font-medium hover:text-[var(--accent-bright)] transition-colors duration-300"
         >
-          AFTERWARD.
+          AFTERWARD
         </Link>
 
         {/* Center: Nav Links */}
