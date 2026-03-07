@@ -41,7 +41,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://afterward.fyi';
 
     // GET THE REAL EMAIL FROM CLERK (NOT DATABASE)
     const realEmail = clerkUser.emailAddresses[0]?.emailAddress || dbUser.email;

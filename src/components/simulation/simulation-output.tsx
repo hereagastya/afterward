@@ -1,94 +1,176 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
-import { SimulationResponse } from "@/lib/types"
-import { motion } from "framer-motion"
-import { ArrowLeft, RefreshCcw } from "lucide-react"
+import { useState } from "react"
+import { AnimatePresence } from "framer-motion"
+import { DualPathSimulationData } from "@/lib/types"
+import { JourneyLanding } from "./journey-landing"
+import { MomentJourneyCard } from "./moment-journey-card"
+import { PathTransition } from "./path-transition"
+import { ComparisonScreen } from "./comparison-screen"
+import { FlashcardViewer } from "./flashcard-viewer"
 
 interface SimulationOutputProps {
-  data: SimulationResponse
-  onReset: () => void
+  simulations: DualPathSimulationData
+  flashcards: any // Your existing flashcard type
+  onContinue: () => void
 }
 
-export function SimulationOutput({ data, onReset }: SimulationOutputProps) {
+type JourneyStep =
+  | "landing"
+  | "pathA-0" | "pathA-1" | "pathA-2" | "pathA-3"
+  | "transition"
+  | "pathB-0" | "pathB-1" | "pathB-2" | "pathB-3"
+  | "comparison"
+  | "flashcards"
+
+export function SimulationOutput({
+  simulations,
+  flashcards,
+  onContinue
+}: SimulationOutputProps) {
+  const [step, setStep] = useState<JourneyStep>("landing")
+
+  const pathAMoments = simulations.pathA.phases
+  const pathBMoments = simulations.pathB.phases
+
+  const handleNext = () => {
+    const sequence: JourneyStep[] = [
+      "landing",
+      "pathA-0", "pathA-1", "pathA-2", "pathA-3",
+      "transition",
+      "pathB-0", "pathB-1", "pathB-2", "pathB-3",
+      "comparison",
+      "flashcards"
+    ]
+    
+    const currentIndex = sequence.indexOf(step)
+    if (currentIndex < sequence.length - 1) {
+      setStep(sequence[currentIndex + 1])
+    }
+  }
+
   return (
-    <div className="w-full max-w-4xl mx-auto space-y-12 pb-24">
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-center space-y-4"
-      >
-        <div className="inline-block px-3 py-1 bg-white/10 rounded-full text-xs uppercase tracking-widest text-gray-400">
-          Core Feeling
-        </div>
-        <h2 className="text-4xl md:text-5xl font-bold text-white">{data.coreFeeling}</h2>
-        <p className="italic text-gray-500 max-w-xl mx-auto">"{data.innerDialogue}"</p>
-      </motion.div>
+    <AnimatePresence mode="wait">
+      {step === "landing" && (
+        <JourneyLanding key="landing" onBegin={handleNext} />
+      )}
 
-      <div className="grid md:grid-cols-2 gap-8">
-        {/* Short Term */}
-        <motion.div 
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-zinc-900/50 border border-white/5 p-8 rounded-xl space-y-6"
-        >
-          <div className="space-y-2">
-            <h3 className="text-xl font-light text-gray-300 uppercase tracking-widest">{data.shortTerm.title}</h3>
-            <p className="text-sm text-gray-500">{data.shortTerm.emotionalToll}</p>
-          </div>
-          <div className="h-px bg-white/10" />
-          <p className="text-gray-300 leading-relaxed font-serif text-lg">
-            {data.shortTerm.description}
-          </p>
-          <ul className="space-y-3">
-            {data.shortTerm.consequences.map((c, i) => (
-              <li key={i} className="flex items-start text-sm text-gray-400">
-                <span className="mr-3 text-red-500/50">●</span>
-                {c}
-              </li>
-            ))}
-          </ul>
-        </motion.div>
+      {step === "pathA-0" && (
+        <MomentJourneyCard
+          key="pathA-0"
+          moment={pathAMoments[0]}
+          currentIndex={0}
+          totalMoments={4}
+          onNext={handleNext}
+          showNextButton={true}
+          nextButtonText="3 Months Later →"
+        />
+      )}
 
-        {/* Long Term */}
-        <motion.div 
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.4 }}
-          className="bg-black border border-white/10 p-8 rounded-xl space-y-6 relative overflow-hidden"
-        >
-            <div className="absolute top-0 right-0 w-32 h-32 bg-red-900/10 blur-3xl rounded-full pointer-events-none" />
-          <div className="space-y-2">
-            <h3 className="text-xl font-light text-white uppercase tracking-widest">{data.longTerm.title}</h3>
-            <p className="text-sm text-gray-500">{data.longTerm.emotionalToll}</p>
-          </div>
-          <div className="h-px bg-white/10" />
-          <p className="text-gray-300 leading-relaxed font-serif text-lg">
-            {data.longTerm.description}
-          </p>
-          <ul className="space-y-3">
-            {data.longTerm.consequences.map((c, i) => (
-              <li key={i} className="flex items-start text-sm text-gray-400">
-                <span className="mr-3 text-red-500">●</span>
-                {c}
-              </li>
-            ))}
-          </ul>
-        </motion.div>
-      </div>
+      {step === "pathA-1" && (
+        <MomentJourneyCard
+          key="pathA-1"
+          moment={pathAMoments[1]}
+          currentIndex={1}
+          totalMoments={4}
+          onNext={handleNext}
+          showNextButton={true}
+          nextButtonText="1 Year Later →"
+        />
+      )}
 
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.8 }}
-        className="flex justify-center"
-      >
-        <Button variant="ghost" className="text-gray-500 hover:text-white hover:bg-white/5" onClick={onReset}>
-          <RefreshCcw className="mr-2 h-4 w-4" />
-          Simulate Another Regret
-        </Button>
-      </motion.div>
-    </div>
+      {step === "pathA-2" && (
+        <MomentJourneyCard
+          key="pathA-2"
+          moment={pathAMoments[2]}
+          currentIndex={2}
+          totalMoments={4}
+          onNext={handleNext}
+          showNextButton={true}
+          nextButtonText="3 Years Later →"
+        />
+      )}
+
+      {step === "pathA-3" && (
+        <MomentJourneyCard
+          key="pathA-3"
+          moment={pathAMoments[3]}
+          currentIndex={3}
+          totalMoments={4}
+          onNext={handleNext}
+          showNextButton={true}
+          nextButtonText="See the Other Path →"
+        />
+      )}
+
+      {step === "transition" && (
+        <PathTransition key="transition" onContinue={handleNext} />
+      )}
+
+      {step === "pathB-0" && (
+        <MomentJourneyCard
+          key="pathB-0"
+          moment={pathBMoments[0]}
+          currentIndex={0}
+          totalMoments={4}
+          onNext={handleNext}
+          showNextButton={true}
+          nextButtonText="3 Months Later →"
+        />
+      )}
+
+      {step === "pathB-1" && (
+        <MomentJourneyCard
+          key="pathB-1"
+          moment={pathBMoments[1]}
+          currentIndex={1}
+          totalMoments={4}
+          onNext={handleNext}
+          showNextButton={true}
+          nextButtonText="1 Year Later →"
+        />
+      )}
+
+      {step === "pathB-2" && (
+        <MomentJourneyCard
+          key="pathB-2"
+          moment={pathBMoments[2]}
+          currentIndex={2}
+          totalMoments={4}
+          onNext={handleNext}
+          showNextButton={true}
+          nextButtonText="3 Years Later →"
+        />
+      )}
+
+      {step === "pathB-3" && (
+        <MomentJourneyCard
+          key="pathB-3"
+          moment={pathBMoments[3]}
+          currentIndex={3}
+          totalMoments={4}
+          onNext={handleNext}
+          showNextButton={true}
+          nextButtonText="Compare Both Paths →"
+        />
+      )}
+
+      {step === "comparison" && (
+        <ComparisonScreen
+          key="comparison"
+          pathA={simulations.pathA}
+          pathB={simulations.pathB}
+          onContinue={handleNext}
+        />
+      )}
+
+      {step === "flashcards" && (
+        <FlashcardViewer
+          key="flashcards"
+          flashcards={flashcards}
+          onComplete={onContinue}
+        />
+      )}
+    </AnimatePresence>
   )
 }
