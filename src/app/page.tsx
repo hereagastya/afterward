@@ -3,8 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { QuestionFlow } from "@/components/simulation/question-flow"
-import { DualPathSimulation } from "@/components/simulation/dual-path-simulation"
-import { FlashcardViewer } from "@/components/simulation/flashcard-viewer"
+import { SimulationOutput } from "@/components/simulation/simulation-output"
 import { DecisionPrompt } from "@/components/simulation/decision-prompt"
 import { SaveConfirmation } from "@/components/simulation/save-confirmation"
 import { FeedbackPopup } from "@/components/feedback-popup"
@@ -161,7 +160,7 @@ export default function Home() {
     return () => observer.disconnect()
   }, [flowState])
 
-  // ─── Handlers (unchanged) ──────────────────────────────────────────────
+  // ─── Handlers ──────────────────────────────────────────────────────────
   const handleStartFlow = async (query: string) => {
     if (!isSignedIn) {
       localStorage.setItem("decision_draft", query)
@@ -184,16 +183,16 @@ export default function Home() {
     setFlowState("simulating")
 
     try {
-      const res = await fetch("/api/simulate-paths", {
+      // Generate simulations
+      const simRes = await fetch("/api/simulate-paths", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ decision, answers: completedAnswers }),
       })
 
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}))
-        // Show popup immediately on rate limit
-        if (res.status === 429) {
+      if (!simRes.ok) {
+        const errorData = await simRes.json().catch(() => ({}))
+        if (simRes.status === 429) {
           setShowLimitPopup(true)
           setFlowState("input")
           return
@@ -201,8 +200,25 @@ export default function Home() {
         throw new Error(errorData.error || "Failed to generate simulations")
       }
 
-      const data = await res.json()
-      setSimulations(data)
+      const simData = await simRes.json()
+      setSimulations(simData)
+
+      // Generate flashcards immediately after simulations
+      const flashRes = await fetch("/api/flashcards", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ decision, answers: completedAnswers, simulations: simData }),
+      })
+
+      if (!flashRes.ok) {
+        const errorData = await flashRes.json().catch(() => ({}))
+        throw new Error(errorData.error || "Failed to generate flashcards")
+      }
+
+      const flashData = await flashRes.json()
+      setFlashcards(flashData)
+
+      // Now go to journey with both simulations AND flashcards ready
       setFlowState("simulation")
     } catch (err: any) {
       console.error(err)
@@ -211,32 +227,7 @@ export default function Home() {
     }
   }
 
-  const handleSimulationComplete = async () => {
-    setFlowState("simulating")
-
-    try {
-      const res = await fetch("/api/flashcards", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ decision, answers, simulations }),
-      })
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}))
-        throw new Error(errorData.error || "Failed to generate flashcards")
-      }
-
-      const data = await res.json()
-      setFlashcards(data)
-      setFlowState("flashcards")
-    } catch (err: any) {
-      console.error(err)
-      setError(err.message || "Failed to generate flashcards")
-      setFlowState("simulation")
-    }
-  }
-
-  const handleFlashcardsComplete = () => {
+  const handleJourneyComplete = () => {
     setFlowState("decision")
   }
 
@@ -296,10 +287,6 @@ export default function Home() {
     setError("")
     setSavedDecisionId(null)
     setShowFeedback(false)
-  }
-
-  const handleBackToQuestions = () => {
-    setFlowState("questions")
   }
 
   const handleSubmitHero = useCallback(() => {
@@ -611,36 +598,20 @@ export default function Home() {
             </motion.div>
           )}
 
-          {/* ═══════════════ SIMULATION STATE ═══════════════ */}
-          {flowState === "simulation" && simulations && (
+          {/* ═══════════════ SIMULATION STATE (NEW JOURNEY) ═══════════════ */}
+          {flowState === "simulation" && simulations && flashcards && (
             <motion.div
               key="simulation"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
-              className="w-full flex flex-col items-center justify-center min-h-screen p-6 md:p-24"
+              className="w-full"
             >
-              <DualPathSimulation
+              <SimulationOutput
                 simulations={simulations}
-                onContinue={handleSimulationComplete}
-              />
-            </motion.div>
-          )}
-
-          {/* ═══════════════ FLASHCARDS STATE ═══════════════ */}
-          {flowState === "flashcards" && flashcards && (
-            <motion.div
-              key="flashcards"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-              className="w-full flex flex-col items-center justify-center min-h-screen p-6 md:p-24"
-            >
-              <FlashcardViewer
                 flashcards={flashcards}
-                onComplete={handleFlashcardsComplete}
+                onContinue={handleJourneyComplete}
               />
             </motion.div>
           )}
