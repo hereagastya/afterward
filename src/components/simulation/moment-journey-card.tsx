@@ -4,6 +4,7 @@ import { useState } from "react"
 import { motion } from "framer-motion"
 import { ChevronDown, ChevronUp } from "lucide-react"
 import { TimelinePhase } from "@/lib/types"
+import { EmotionOrb } from "./emotion-orb"
 
 interface MomentJourneyCardProps {
   moment: TimelinePhase
@@ -50,16 +51,31 @@ export function MomentJourneyCard({
 
       {/* Main Card */}
       <div className="max-w-2xl w-full glass p-8 md:p-12 rounded-2xl">
-        {/* Time Label */}
+        {/* Mystical time label */}
         <div className="text-center mb-6">
-          <span className="text-sm font-mono uppercase tracking-wider text-gray-500">
-            {moment.timeLabel}
-          </span>
+          <motion.div
+            animate={{
+              opacity: [0.6, 1, 0.6]
+            }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+            className="relative inline-block"
+          >
+            {/* Glow background */}
+            <div className="absolute inset-0 bg-purple-500/20 blur-xl rounded-full" />
+            
+            <span className="relative font-[var(--font-dm-mono)] uppercase tracking-[0.25em] text-purple-400 text-sm px-6 py-2 border border-purple-500/30 rounded-full bg-purple-500/5">
+              {moment.timeLabel}
+            </span>
+          </motion.div>
         </div>
 
-        {/* Emoji */}
+        {/* Emotion Orb instead of emoji */}
         <div className="text-center mb-6">
-          <span className="text-7xl">{moment.emoji}</span>
+          <EmotionOrb emotion={moment.feeling} size="lg" />
         </div>
 
         {/* Title */}

@@ -9,6 +9,7 @@ import { SaveConfirmation } from "@/components/simulation/save-confirmation"
 import { FeedbackPopup } from "@/components/feedback-popup"
 import { LimitPopup } from "@/components/limit-popup"
 import { Navbar } from "@/components/navbar"
+import { UpgradeModal } from "@/components/upgrade-modal"
 import { 
   FlowState, 
   QuestionAnswer, 
@@ -88,6 +89,7 @@ export default function Home() {
   const [savedDecisionId, setSavedDecisionId] = useState<string | null>(null)
   const [showFeedback, setShowFeedback] = useState(false)
   const [showLimitPopup, setShowLimitPopup] = useState(false)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
 
   // Hero textarea ref
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -193,7 +195,7 @@ export default function Home() {
       if (!simRes.ok) {
         const errorData = await simRes.json().catch(() => ({}))
         if (simRes.status === 429) {
-          setShowLimitPopup(true)
+          setShowUpgradeModal(true)
           setFlowState("input")
           return
         }
@@ -667,6 +669,12 @@ export default function Home() {
       <LimitPopup
         isOpen={showLimitPopup}
         onClose={() => setShowLimitPopup(false)}
+      />
+
+      {/* Upgrade Modal */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
       />
     </main>
   )

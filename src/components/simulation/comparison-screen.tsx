@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion"
 import { TimelineSimulation } from "@/lib/types"
+import { EmotionOrb } from "./emotion-orb"
 
 interface ComparisonScreenProps {
   pathA: TimelineSimulation
@@ -36,7 +37,7 @@ export function ComparisonScreen({ pathA, pathB, onContinue }: ComparisonScreenP
           <div className="space-y-4">
             {pathA.phases.map((phase, i) => (
               <div key={i} className="flex items-center gap-4">
-                <span className="text-3xl">{phase.emoji}</span>
+                <EmotionOrb emotion={phase.feeling} size="sm" />
                 <div className="flex-1">
                   <p className="text-sm font-mono text-gray-500">{phase.timeLabel}</p>
                   <p className="text-white font-medium">{phase.title}</p>
@@ -61,7 +62,7 @@ export function ComparisonScreen({ pathA, pathB, onContinue }: ComparisonScreenP
           <div className="space-y-4">
             {pathB.phases.map((phase, i) => (
               <div key={i} className="flex items-center gap-4">
-                <span className="text-3xl">{phase.emoji}</span>
+                <EmotionOrb emotion={phase.feeling} size="sm" />
                 <div className="flex-1">
                   <p className="text-sm font-mono text-gray-500">{phase.timeLabel}</p>
                   <p className="text-white font-medium">{phase.title}</p>

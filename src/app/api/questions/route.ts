@@ -77,7 +77,56 @@ export async function POST(req: Request) {
       ];
     } else {
       try {
-        const prompt = `${SYSTEM_PROMPT}\n\nDecision being contemplated: "${decision}"`;
+        const questionCount = 4 + Math.floor(Math.random() * 2) // 4 or 5 questions randomly
+
+        const prompt = `You are a decision clarity coach. Generate ${questionCount} UNPREDICTABLE questions about this decision.
+
+Decision: "${decision}"
+
+CRITICAL RULES FOR VARIETY:
+1. RANDOMIZE question types - never follow a pattern
+2. Mix types freely: multiple_choice, text, scale, yes_no
+3. Each question should reveal something different (fears, values, practical concerns, emotions, consequences)
+4. Some questions should be uncomfortable and direct
+5. Avoid generic questions - be specific to this decision
+
+QUESTION TYPE DISTRIBUTION (randomize order):
+- ${Math.random() > 0.5 ? '2' : '1'} multiple choice
+- ${Math.random() > 0.5 ? '2' : '1'} text input
+- ${Math.random() > 0.5 ? '1' : '2'} scale (1-10)
+- ${Math.random() > 0.3 ? '1' : '0'} yes/no
+
+EXAMPLES OF GOOD UNPREDICTABLE QUESTIONS:
+Multiple choice:
+- "What scares you more about this?" [Failing publicly, Regretting not trying, Disappointing others, Financial loss]
+- "If this goes wrong, who suffers most?" [You, Your family, Your partner, Your career]
+
+Text:
+- "Describe the worst-case scenario in one brutal sentence."
+- "What's the real reason you're hesitating? (No bullshit.)"
+- "What would your future self tell you about this choice?"
+
+Scale:
+- "On a scale of 1-10, how much is fear vs. logic driving this decision?"
+- "Rate your gut feeling about this choice (1=dread, 10=certainty)"
+
+Yes/No:
+- "If you knew you'd fail, would you still do it?"
+- "Is someone else's opinion holding you back?"
+
+Generate ${questionCount} questions in this EXACT JSON format:
+{
+  "questions": [
+    {
+      "id": "q1",
+      "type": "multiple_choice" | "text" | "scale" | "yes_no",
+      "question": "The question text",
+      "options": ["opt1", "opt2", "opt3", "opt4"] // only for multiple_choice
+    }
+  ]
+}
+
+IMPORTANT: Randomize the ORDER of question types. Don't put all multiple choice first.`
         const geminiResult = await gemini.generateContent(prompt);
         const response = await geminiResult.response;
         const content = response.text();
@@ -91,7 +140,8 @@ export async function POST(req: Request) {
           jsonString = jsonMatch[1].trim();
         }
 
-        questions = JSON.parse(jsonString) as GeneratedQuestion[];
+        const parsed = JSON.parse(jsonString);
+        questions = parsed.questions || parsed;
         
         // Validate structure
         if (!Array.isArray(questions) || questions.length < 3) {
