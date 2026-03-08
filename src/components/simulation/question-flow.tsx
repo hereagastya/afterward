@@ -103,7 +103,7 @@ export function QuestionFlow({ decision, onComplete, onBack }: QuestionFlowProps
   const progress = ((currentIndex + 1) / questions.length) * 100
 
   return (
-    <div className="w-full flex flex-col min-h-[80vh] py-12 relative">
+    <div className="w-full max-w-3xl mx-auto py-12 flex flex-col min-h-[80vh] relative">
       {/* Background Ambience */}
       <div className="absolute top-0 left-0 w-[800px] h-[800px] bg-[var(--accent-primary)] rounded-full blur-[150px] opacity-10 -translate-x-1/3 -translate-y-1/3 pointer-events-none mix-blend-screen" />
       <div className="fixed inset-0 noise-overlay opacity-50 pointer-events-none" />
