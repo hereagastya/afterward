@@ -2,9 +2,9 @@ import { useCallback } from 'react'
 
 export function useSound() {
   const playBell = useCallback(() => {
-    // Singing bowl sound
-    const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3')
-    audio.volume = 0.3
+    // Tibetan singing bowl (deep)
+    const audio = new Audio('https://cdn.pixabay.com/audio/2021/08/04/audio_12b0c7443c.mp3')
+    audio.volume = 0.25
     audio.play().catch(() => {})
   }, [])
 

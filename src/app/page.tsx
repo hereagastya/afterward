@@ -304,7 +304,7 @@ export default function Home() {
   // ─── RENDER ─────────────────────────────────────────────────────────────
   return (
     <main className="min-h-screen bg-[var(--bg-base)] relative overflow-x-hidden">
-      <Navbar />
+      {flowState !== "simulation" && <Navbar />}
 
       <div className="relative w-full">
         <AnimatePresence mode="wait">

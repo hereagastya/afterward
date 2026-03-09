@@ -68,22 +68,26 @@ export async function POST(req: Request) {
       });
     }
 
-    // Check rate limit
-    const rateLimit = await checkRateLimit(dbUser.id);
-    if (!rateLimit.allowed) {
-      const message = rateLimit.limitType === 'daily'
-        ? "You've reached your daily limit of 2 decisions. Try again tomorrow or upgrade to Pro for unlimited access."
-        : "You've reached your monthly limit of 5 decisions. Upgrade to Pro for unlimited access.";
-      return NextResponse.json(
-        {
-          error: 'rate_limit_exceeded',
-          limitType: rateLimit.limitType,
-          message,
-          remainingDaily: rateLimit.remainingDaily,
-          remainingMonthly: rateLimit.remainingMonthly,
-        },
-        { status: 429 }
-      );
+    const bypassRateLimit = dbUser.isPro || dbUser.email === 'sharmaagastya72@gmail.com';
+
+    if (!bypassRateLimit) {
+      // Check rate limit
+      const rateLimit = await checkRateLimit(dbUser.id);
+      if (!rateLimit.allowed) {
+        const message = rateLimit.limitType === 'daily'
+          ? "You've reached your daily limit of 2 decisions. Try again tomorrow or upgrade to Pro for unlimited access."
+          : "You've reached your monthly limit of 5 decisions. Upgrade to Pro for unlimited access.";
+        return NextResponse.json(
+          {
+            error: 'rate_limit_exceeded',
+            limitType: rateLimit.limitType,
+            message,
+            remainingDaily: rateLimit.remainingDaily,
+            remainingMonthly: rateLimit.remainingMonthly,
+          },
+          { status: 429 }
+        );
+      }
     }
 
     // Create decision with all related data

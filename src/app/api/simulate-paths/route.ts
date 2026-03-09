@@ -14,43 +14,44 @@ const RequestSchema = z.object({
   }))
 });
 
-const SYSTEM_PROMPT = `You are a future-self simulator. Given a life decision and user context, generate two distinct timelines: one where they make the change (Path A), and one where they don't (Path B).
+const SYSTEM_PROMPT = `Generate a dual-path timeline simulation.
 
-For each path, simulate 4 key moments:
-1. "Immediate" (First month)
-2. "Short Term" (3 months)
-3. "Medium Term" (1 year)
-4. "Long Term" (3 years)
+CRITICAL: Keep ALL text extremely short and punchy.
 
-For each moment, provide:
-- title: A specific, evocative title for that phase (e.g., "The Honeymoon Crash", "The Quiet Resignation")
+For each timeline moment:
+- title: Maximum 5 words
 - emoji: A single emoji representing the dominant vibe
 - timeLabel: "Now", "3 months", "1 year", "3 years"
-- feeling: A 2-4 word emotional summary (lowercased)
-- shortSummary: 2 concise sentences describing the reality. Focus on sensory details and internal monologue.
-- details: 2 specific bullet points (concrete events, thoughts, or observations).
+- feeling: One word (e.g. "dread", "hope", "regret") (lowercased)
+- shortSummary: EXACTLY 3 short sentences (max 7 words each)
+- details: 2-3 bullet points (max 10 words each)
+
+Example moment:
+{
+  "title": "The Leap",
+  "emoji": "🚀",  
+  "timeLabel": "Now",
+  "feeling": "terror",
+  "shortSummary": "You quit today. Heart racing. No safety net.",
+  "details": [
+    "Handed in resignation this morning",
+    "Savings cover 6 months max"
+  ]
+}
+
+NO long paragraphs. Keep it cinematic and punchy.
 
 Return a JSON object with this exact structure:
 {
   "pathA": {
     "pathType": "go",
     "pathTitle": "If You Go",
-    "phases": [
-      {
-        "title": "The Leap",
-        "emoji": "🚀",
-        "timeLabel": "Now",
-        "feeling": "terrified exhilaration",
-        "shortSummary": "You sign the papers. Your hands are shaking but the air smells different.",
-        "details": [" waking up at 4am wondering if you messed up", " a surprising text from an old friend"]
-      },
-      ... (3 more phases)
-    ]
+    "phases": [ ... ]
   },
   "pathB": {
     "pathType": "stay",
     "pathTitle": "If You Stay",
-    "phases": [ ... 4 phases ... ]
+    "phases": [ ... ]
   }
 }
 
