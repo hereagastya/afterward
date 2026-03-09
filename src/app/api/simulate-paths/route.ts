@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { gemini } from '@/lib/gemini';
 import { QuestionAnswer, DualPathSimulationData } from '@/lib/types';
 import { z } from 'zod';
-import { auth } from '@clerk/nextjs/server';
+import { auth, currentUser } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/db';
 
 const RequestSchema = z.object({
@@ -69,6 +69,8 @@ function formatAnswersForPrompt(answers: QuestionAnswer[]): string {
 export async function POST(req: Request) {
   try {
     const { userId } = await auth();
+    const clerkUser = await currentUser();
+    const clerkEmail = clerkUser?.emailAddresses?.[0]?.emailAddress;
     
     // Rate Limiting Check (only for logged-in users)
     if (userId) {
@@ -111,7 +113,8 @@ export async function POST(req: Request) {
         }
 
         // Check limits for free users (2/day, 10/month)
-        if (!user.isPro) {
+        const bypassRateLimit = user.isPro || user.email === 'sharmaagastya72@gmail.com' || clerkEmail === 'sharmaagastya72@gmail.com';
+        if (!bypassRateLimit) {
             if (dailyCount >= 2) {
               return NextResponse.json(
                   { error: "You've reached your daily limit of 2 decisions. Paid plans coming soon!", code: "RATE_LIMIT_DAILY" },

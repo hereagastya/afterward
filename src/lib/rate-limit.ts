@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/db';
 
 const DAILY_LIMIT = 2;
-const MONTHLY_LIMIT = 5;
+const MONTHLY_LIMIT = 10;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MONTH_MS = 30 * DAY_MS;
 

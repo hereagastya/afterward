@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { auth, currentUser } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/db';
-import { checkRateLimit, incrementDecisionCount } from '@/lib/rate-limit';
+
 import { QuestionAnswer, DualPathSimulationData, FlashcardSet, UserChoice } from '@/lib/types';
 import { z } from 'zod';
 
@@ -36,6 +36,7 @@ const RequestSchema = z.object({
 export async function POST(req: Request) {
   try {
     const { userId } = await auth();
+    const clerkUser = await currentUser();
     
     if (!userId) {
       return NextResponse.json(
@@ -68,28 +69,9 @@ export async function POST(req: Request) {
       });
     }
 
-    const bypassRateLimit = dbUser.isPro || dbUser.email === 'sharmaagastya72@gmail.com';
-
-    if (!bypassRateLimit) {
-      // Check rate limit
-      const rateLimit = await checkRateLimit(dbUser.id);
-      if (!rateLimit.allowed) {
-        const message = rateLimit.limitType === 'daily'
-          ? "You've reached your daily limit of 2 decisions. Try again tomorrow or upgrade to Pro for unlimited access."
-          : "You've reached your monthly limit of 5 decisions. Upgrade to Pro for unlimited access.";
-        return NextResponse.json(
-          {
-            error: 'rate_limit_exceeded',
-            limitType: rateLimit.limitType,
-            message,
-            remainingDaily: rateLimit.remainingDaily,
-            remainingMonthly: rateLimit.remainingMonthly,
-          },
-          { status: 429 }
-        );
-      }
-    }
-
+    // Skip rate limits in save-decision to prevent double-counting.
+    // The rate limit check and increment happens entirely in simulate-paths.
+    
     // Create decision with all related data
     const savedDecision = await prisma.decision.create({
       data: {
@@ -137,9 +119,6 @@ export async function POST(req: Request) {
         flashcards: true
       }
     });
-
-    // Increment rate limit counters after successful save
-    await incrementDecisionCount(dbUser.id);
 
     return NextResponse.json({
       success: true,
