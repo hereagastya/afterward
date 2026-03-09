@@ -1,12 +1,20 @@
 "use client"
 
 import { motion } from "framer-motion"
+import { useEffect } from "react"
+import { useSound } from "@/lib/hooks/use-sound"
 
 interface JourneyLandingProps {
   onBegin: () => void
 }
 
 export function JourneyLanding({ onBegin }: JourneyLandingProps) {
+  const { playBell } = useSound()
+
+  useEffect(() => {
+    playBell()
+  }, [playBell])
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -98,30 +106,12 @@ export function JourneyLanding({ onBegin }: JourneyLandingProps) {
           Then, if you <span className="text-purple-400 font-semibold">STAY</span>.
         </p>
 
-        <motion.button
+        <button
           onClick={onBegin}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="group relative px-10 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold text-lg overflow-hidden"
+          className="btn-mystical text-lg"
         >
-          {/* Button shimmer */}
-          <motion.div
-            animate={{
-              x: ['-100%', '100%']
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              ease: "linear"
-            }}
-            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-          />
-          
-          <span className="relative z-10">Enter the Timeline →</span>
-          
-          {/* Glow effect on hover */}
-          <div className="absolute inset-0 bg-purple-500/0 group-hover:bg-purple-500/20 transition-all duration-300 rounded-xl" />
-        </motion.button>
+          Enter the Timeline →
+        </button>
       </motion.div>
 
       {/* Floating particles */}

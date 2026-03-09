@@ -8,6 +8,7 @@ import { MomentJourneyCard } from "./moment-journey-card"
 import { PathTransition } from "./path-transition"
 import { ComparisonScreen } from "./comparison-screen"
 import { FlashcardViewer } from "./flashcard-viewer"
+import { useSound } from "@/lib/hooks/use-sound"
 
 interface SimulationOutputProps {
   simulations: DualPathSimulationData
@@ -29,11 +30,13 @@ export function SimulationOutput({
   onContinue
 }: SimulationOutputProps) {
   const [step, setStep] = useState<JourneyStep>("landing")
+  const { playFlip } = useSound()
 
   const pathAMoments = simulations.pathA.phases
   const pathBMoments = simulations.pathB.phases
 
   const handleNext = () => {
+    playFlip()
     const sequence: JourneyStep[] = [
       "landing",
       "pathA-0", "pathA-1", "pathA-2", "pathA-3",

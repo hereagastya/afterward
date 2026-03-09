@@ -142,7 +142,7 @@ export function FlashcardViewer({ flashcards, onComplete }: FlashcardViewerProps
             onClick={() => setShowIntro(false)}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="px-10 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:shadow-[0_0_40px_rgba(168,85,247,0.6)] transition-all"
+            className="btn-mystical"
           >
             Face the Shadows →
           </motion.button>
@@ -251,7 +251,7 @@ export function FlashcardViewer({ flashcards, onComplete }: FlashcardViewerProps
 
         <button
           onClick={handleNext}
-          className="px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:shadow-[0_0_30px_rgba(168,85,247,0.5)] transition-all"
+          className="btn-glass"
         >
           {currentPath === 'pathB' && currentIndex === currentCards.length - 1
             ? 'Continue →'

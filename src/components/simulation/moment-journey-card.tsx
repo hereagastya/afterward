@@ -132,7 +132,7 @@ export function MomentJourneyCard({
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
           onClick={onNext}
-          className="mt-8 px-8 py-4 bg-gradient-to-r from-[#8B6FD4] to-[#B794F4] text-white rounded-lg hover:shadow-[0_0_30px_rgba(139,111,212,0.5)] transition-all font-semibold"
+          className="btn-glass mt-8"
         >
           {nextButtonText}
         </motion.button>

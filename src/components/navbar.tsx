@@ -5,9 +5,14 @@ import { SignInButton, SignUpButton, SignedIn, SignedOut, UserButton } from "@cl
 import Link from "next/link"
 import { MobileMenu } from "./mobile-menu"
 
+interface NavbarProps {
+  hidden?: boolean
+}
 
-export function Navbar() {
+export function Navbar({ hidden = false }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false)
+
+  if (hidden) return null
 
   useEffect(() => {
     const handleScroll = () => {

@@ -136,7 +136,7 @@ export function QuestionCard({ question, onAnswer, isLast, index, total }: Quest
                   }
                 }}
                 disabled={!answer}
-                className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:shadow-[0_0_30px_rgba(168,85,247,0.5)] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                className="btn-holo w-full"
               >
                 {isLast ? 'Generate Simulation →' : 'Next Question →'}
               </button>

@@ -123,7 +123,7 @@ export function UpgradeModal({ isOpen, onClose }: UpgradeModalProps) {
                   <button
                     onClick={() => handleUpgrade('pro')}
                     disabled={loading === 'pro'}
-                    className="w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-semibold hover:shadow-[0_0_30px_rgba(168,85,247,0.5)] transition-all disabled:opacity-50"
+                    className="btn-mystical w-full"
                   >
                     {loading === 'pro' ? 'Loading...' : 'Upgrade to Pro'}
                   </button>
@@ -160,7 +160,7 @@ export function UpgradeModal({ isOpen, onClose }: UpgradeModalProps) {
                   <button
                     onClick={() => handleUpgrade('premium')}
                     disabled={loading === 'premium'}
-                    className="w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-semibold hover:shadow-[0_0_30px_rgba(168,85,247,0.5)] transition-all disabled:opacity-50"
+                    className="btn-glass w-full"
                   >
                     {loading === 'premium' ? 'Loading...' : 'Upgrade to Premium'}
                   </button>
