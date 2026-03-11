@@ -174,8 +174,8 @@ export function FlashcardViewer({ flashcards, onComplete }: FlashcardViewerProps
       </div>
 
       {/* Counter */}
-      <div className="fixed top-8 right-8 z-50 text-gray-500 font-mono text-sm">
-        {overallIndex + 1} / {totalCards}
+      <div className="fixed top-8 right-8 z-50 text-gray-500 font-mono text-xs tracking-widest">
+        {overallIndex + 1} <span className="text-gray-700">/</span> {totalCards}
       </div>
 
       {/* Swipeable card container */}
@@ -204,54 +204,75 @@ export function FlashcardViewer({ flashcards, onComplete }: FlashcardViewerProps
             }}
             className="absolute inset-0 flex items-center justify-center"
           >
-            {/* Card content - centered, not scrollable */}
-            <div className="w-full max-w-3xl flex flex-col items-center justify-center space-y-12 px-8">
-              
-              {/* Scenario title - HUGE and dramatic */}
-              <motion.h1
-                initial={{ y: 30, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.1 }}
-                className="text-4xl md:text-6xl lg:text-7xl font-[var(--font-playfair)] text-white text-center leading-[1.1] max-w-4xl"
-              >
-                {currentCard.content}
-              </motion.h1>
-
-              {/* Description - Medium, readable */}
-
-
-              {/* Likelihood meter - visual and clean */}
-              <motion.div
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.3 }}
-                className="w-full max-w-md space-y-4"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-500 uppercase tracking-[0.2em] text-xs font-mono">
-                    Likelihood
-                  </span>
-                  <span className="text-purple-400 font-bold text-sm">
-                    {currentCard.likelihood}
-                  </span>
-                </div>
+            {/* Center-focused Card Frame */}
+            <div className="w-full max-w-2xl px-4">
+              <div className="relative glass-mystical border border-white/10 rounded-[2rem] p-10 md:p-14 overflow-hidden shadow-2xl shadow-purple-500/10">
+                {/* Subtle glitch line accent */}
+                <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-purple-500 to-transparent opacity-50" />
                 
-                <div className="relative h-3 bg-gray-900 rounded-full overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: getLikelihoodWidth(currentCard.likelihood) }}
-                    transition={{ delay: 0.5, duration: 0.8, ease: "easeOut" }}
-                    className={`h-full bg-gradient-to-r ${getLikelihoodGradient(currentCard.likelihood)} rounded-full`}
-                  />
-                  {/* Shine effect */}
-                  <motion.div
-                    animate={{ x: ['-100%', '200%'] }}
-                    transition={{ duration: 2, repeat: Infinity, ease: "linear", repeatDelay: 1 }}
-                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-                  />
-                </div>
-              </motion.div>
+                <div className="flex flex-col items-center space-y-10">
+                  {/* Category Badge */}
+                  <div className="px-3 py-1 bg-white/5 border border-white/10 rounded-full">
+                    <span className="text-[10px] text-gray-500 uppercase tracking-[0.3em] font-mono">
+                      {currentCard.category}
+                    </span>
+                  </div>
 
+                  {/* Scenario Title - Significantly reduced and centered */}
+                  <div className="relative group">
+                    <motion.h1
+                      initial={{ y: 20, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      transition={{ delay: 0.2 }}
+                      className="text-2xl md:text-3xl lg:text-4xl font-[var(--font-playfair)] text-white text-center leading-relaxed font-light"
+                    >
+                      {currentCard.content}
+                    </motion.h1>
+                    {/* Shadow duplicate for holographic depth */}
+                    <motion.h1
+                      className="absolute inset-0 text-2xl md:text-3xl lg:text-4xl font-[var(--font-playfair)] text-purple-500/20 text-center leading-relaxed font-light blur-[1px] pointer-events-none"
+                      animate={{ 
+                        x: [-1, 1, -1],
+                        opacity: [0.1, 0.3, 0.1]
+                      }}
+                      transition={{ duration: 0.2, repeat: Infinity }}
+                    >
+                      {currentCard.content}
+                    </motion.h1>
+                  </div>
+
+                  {/* Likelihood Meter - Integrated into card */}
+                  <motion.div
+                    initial={{ y: 10, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.4 }}
+                    className="w-full max-w-xs pt-8 border-t border-white/5"
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-gray-500 uppercase tracking-[0.2em] text-[10px] font-mono">
+                        Likelihood
+                      </span>
+                      <span className="text-purple-400 font-bold text-xs uppercase tracking-widest">
+                        {currentCard.likelihood}
+                      </span>
+                    </div>
+                    
+                    <div className="relative h-1.5 bg-gray-900 rounded-full overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: getLikelihoodWidth(currentCard.likelihood) }}
+                        transition={{ delay: 0.6, duration: 1, ease: "easeOut" }}
+                        className={`h-full bg-gradient-to-r ${getLikelihoodGradient(currentCard.likelihood)} rounded-full`}
+                      />
+                    </div>
+                  </motion.div>
+                </div>
+
+                {/* Corner Accents */}
+                <div className="absolute bottom-4 right-4 text-white/5 pointer-events-none">
+                  <span className="text-4xl font-serif">"</span>
+                </div>
+              </div>
             </div>
           </motion.div>
         </AnimatePresence>
