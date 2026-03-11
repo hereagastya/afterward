@@ -10,22 +10,22 @@ interface FlashcardViewerProps {
 }
 
 export function FlashcardViewer({ flashcards, onComplete }: FlashcardViewerProps) {
-  const [currentPath, setCurrentPath] = useState<'pathA' | 'pathB'>('pathA')
+  const [currentPath, setCurrentPath] = useState<'goFlashcards' | 'stayFlashcards'>('goFlashcards')
   const [currentIndex, setCurrentIndex] = useState(0)
   const [showIntro, setShowIntro] = useState(true)
   const [direction, setDirection] = useState(0)
 
   const currentCards = flashcards[currentPath]
   const currentCard = currentCards[currentIndex]
-  const totalCards = flashcards.pathA.length + flashcards.pathB.length
-  const overallIndex = currentPath === 'pathA' ? currentIndex : flashcards.pathA.length + currentIndex
+  const totalCards = flashcards.goFlashcards.length + flashcards.stayFlashcards.length
+  const overallIndex = currentPath === 'goFlashcards' ? currentIndex : flashcards.goFlashcards.length + currentIndex
 
   const handleNext = () => {
     setDirection(1)
     if (currentIndex < currentCards.length - 1) {
       setCurrentIndex(currentIndex + 1)
-    } else if (currentPath === 'pathA') {
-      setCurrentPath('pathB')
+    } else if (currentPath === 'goFlashcards') {
+      setCurrentPath('stayFlashcards')
       setCurrentIndex(0)
     } else {
       onComplete()
@@ -36,9 +36,9 @@ export function FlashcardViewer({ flashcards, onComplete }: FlashcardViewerProps
     setDirection(-1)
     if (currentIndex > 0) {
       setCurrentIndex(currentIndex - 1)
-    } else if (currentPath === 'pathB') {
-      setCurrentPath('pathA')
-      setCurrentIndex(flashcards.pathA.length - 1)
+    } else if (currentPath === 'stayFlashcards') {
+      setCurrentPath('goFlashcards')
+      setCurrentIndex(flashcards.goFlashcards.length - 1)
     }
   }
 
@@ -168,7 +168,7 @@ export function FlashcardViewer({ flashcards, onComplete }: FlashcardViewerProps
           className="px-4 py-2 bg-purple-500/10 border border-purple-500/30 rounded-full backdrop-blur-sm"
         >
           <span className="text-purple-400 font-mono text-xs tracking-[0.3em] uppercase">
-            {currentPath === 'pathA' ? 'If You Go' : 'If You Stay'}
+            {currentPath === 'goFlashcards' ? 'If You Go' : 'If You Stay'}
           </span>
         </motion.div>
       </div>
@@ -214,18 +214,11 @@ export function FlashcardViewer({ flashcards, onComplete }: FlashcardViewerProps
                 transition={{ delay: 0.1 }}
                 className="text-4xl md:text-6xl lg:text-7xl font-[var(--font-playfair)] text-white text-center leading-[1.1] max-w-4xl"
               >
-                {currentCard.scenario}
+                {currentCard.content}
               </motion.h1>
 
               {/* Description - Medium, readable */}
-              <motion.p
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.2 }}
-                className="text-xl md:text-2xl text-gray-300 text-center leading-relaxed max-w-3xl"
-              >
-                {currentCard.description}
-              </motion.p>
+
 
               {/* Likelihood meter - visual and clean */}
               <motion.div
@@ -278,7 +271,7 @@ export function FlashcardViewer({ flashcards, onComplete }: FlashcardViewerProps
       {/* Invisible tap zones */}
       <button
         onClick={handlePrev}
-        disabled={currentPath === 'pathA' && currentIndex === 0}
+        disabled={currentPath === 'goFlashcards' && currentIndex === 0}
         className="fixed left-0 top-0 bottom-0 w-1/4 z-40 opacity-0 hover:opacity-5 bg-white disabled:cursor-not-allowed transition-opacity"
         aria-label="Previous"
       />

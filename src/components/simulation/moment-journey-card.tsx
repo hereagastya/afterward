@@ -90,7 +90,7 @@ export function MomentJourneyCard({
       <div className="absolute inset-0 z-0 opacity-20 pointer-events-none mix-blend-overlay noise-overlay" />
 
       {/* Progress Dots - moved higher */}
-      <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 flex gap-2">
+      <div className="fixed top-10 left-1/2 -translate-x-1/2 z-50 flex gap-2">
         {Array.from({ length: totalMoments }).map((_, i) => (
           <div
             key={i}
