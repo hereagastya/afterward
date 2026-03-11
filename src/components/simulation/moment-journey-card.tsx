@@ -89,15 +89,17 @@ export function MomentJourneyCard({
       {/* Glitch Overlay / Film Grain */}
       <div className="absolute inset-0 z-0 opacity-20 pointer-events-none mix-blend-overlay noise-overlay" />
 
-      {/* Progress Dots - fixed top */}
-      <div className="fixed top-8 left-1/2 -translate-x-1/2 flex gap-1.5 z-50 w-full max-w-sm px-8 pointer-events-none">
+      {/* Progress Dots - moved higher */}
+      <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 flex gap-2">
         {Array.from({ length: totalMoments }).map((_, i) => (
           <div
             key={i}
-            className={`h-1 flex-1 rounded-full transition-all duration-500 shadow-sm ${
-              i < currentIndex ? 'bg-white/80' :
-              i === currentIndex ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)]' :
-              'bg-white/20'
+            className={`w-2 h-2 rounded-full transition-all ${
+              i === currentIndex
+                ? "bg-purple-400 w-8"
+                : i < currentIndex
+                ? "bg-purple-600"
+                : "bg-gray-700"
             }`}
           />
         ))}
@@ -105,7 +107,7 @@ export function MomentJourneyCard({
 
       {/* Main Full-Screen Content */}
       <div 
-        className="relative z-10 w-full h-full flex flex-col justify-end px-6 md:px-12 pb-24 max-w-4xl mx-auto cursor-pointer"
+        className="relative z-10 w-full h-full flex flex-col justify-end px-6 md:px-12 pb-24 pt-24 max-w-4xl mx-auto cursor-pointer"
         onClick={(!showDetails && showNextButton) ? onNext : undefined}
       >
         <div className="flex flex-col mb-12" onClick={e => e.stopPropagation()}>

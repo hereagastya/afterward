@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion, AnimatePresence, PanInfo } from "framer-motion"
 import { FlashcardSet } from "@/lib/types"
 
@@ -12,32 +12,13 @@ interface FlashcardViewerProps {
 export function FlashcardViewer({ flashcards, onComplete }: FlashcardViewerProps) {
   const [currentPath, setCurrentPath] = useState<'pathA' | 'pathB'>('pathA')
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [direction, setDirection] = useState(0)
   const [showIntro, setShowIntro] = useState(true)
+  const [direction, setDirection] = useState(0)
 
-  const pathKey = currentPath === 'pathA' ? 'goFlashcards' : 'stayFlashcards'
-  const currentCards = flashcards[pathKey] || []
+  const currentCards = flashcards[currentPath]
   const currentCard = currentCards[currentIndex]
-
-  // If there are no flashcards somehow, fallback gracefully
-  if (!currentCards.length) {
-    return <div className="text-white p-10 h-screen bg-black flex items-center justify-center">Loading visions...</div>
-  }
-
-  const goLength = flashcards.goFlashcards?.length || 0
-  const stayLength = flashcards.stayFlashcards?.length || 0
-  const totalCards = goLength + stayLength
-  const overallIndex = currentPath === 'pathA' ? currentIndex : goLength + currentIndex
-
-  const handleSwipe = (offset: number) => {
-    if (offset < -100) {
-      // Swiped left - go to next (content moves left)
-      handleNext()
-    } else if (offset > 100) {
-      // Swiped right - go to prev (content moves right)
-      handlePrev()
-    }
-  }
+  const totalCards = flashcards.pathA.length + flashcards.pathB.length
+  const overallIndex = currentPath === 'pathA' ? currentIndex : flashcards.pathA.length + currentIndex
 
   const handleNext = () => {
     setDirection(1)
@@ -57,28 +38,24 @@ export function FlashcardViewer({ flashcards, onComplete }: FlashcardViewerProps
       setCurrentIndex(currentIndex - 1)
     } else if (currentPath === 'pathB') {
       setCurrentPath('pathA')
-      setCurrentIndex(goLength - 1)
+      setCurrentIndex(flashcards.pathA.length - 1)
     }
   }
 
-  const variants = {
-    enter: (direction: number) => ({
-      x: direction > 0 ? '100vw' : '-100vw',
-      opacity: 0,
-      scale: 0.95
-    }),
-    center: {
-      zIndex: 1,
-      x: 0,
-      opacity: 1,
-      scale: 1
-    },
-    exit: (direction: number) => ({
-      zIndex: 0,
-      x: direction < 0 ? '100vw' : '-100vw',
-      opacity: 0,
-      scale: 0.95
-    })
+  const getLikelihoodWidth = (likelihood: string) => {
+    const lower = likelihood.toLowerCase()
+    if (lower.includes('high') || lower.includes('very likely')) return '85%'
+    if (lower.includes('medium') || lower.includes('possible')) return '55%'
+    return '30%'
+  }
+
+  const getLikelihoodGradient = (likelihood: string) => {
+    const lower = likelihood.toLowerCase()
+    if (lower.includes('high') || lower.includes('very likely')) 
+      return 'from-red-600 via-orange-500 to-red-600'
+    if (lower.includes('medium') || lower.includes('possible')) 
+      return 'from-yellow-600 via-orange-500 to-yellow-600'
+    return 'from-green-600 via-teal-500 to-green-600'
   }
 
   if (showIntro) {
@@ -87,220 +64,227 @@ export function FlashcardViewer({ flashcards, onComplete }: FlashcardViewerProps
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="flex flex-col items-center justify-center h-screen w-full px-6 relative overflow-hidden bg-black"
+        className="fixed inset-0 bg-black flex flex-col items-center justify-center overflow-hidden"
       >
-        {/* Portal background */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        {/* Pulsing background */}
+        <div className="absolute inset-0 flex items-center justify-center">
           <motion.div
             animate={{
-              scale: [1, 1.2, 1],
-              rotate: [0, 180, 360]
+              scale: [1, 1.3, 1],
+              opacity: [0.1, 0.2, 0.1]
             }}
             transition={{
-              duration: 20,
-              repeat: Infinity,
-              ease: "linear"
-            }}
-            className="w-[120vw] h-[120vw] md:w-[600px] md:h-[600px] rounded-full border border-purple-500/20"
-          />
-          <motion.div
-            animate={{
-              scale: [1, 1.1, 1]
-            }}
-            transition={{
-              duration: 3,
+              duration: 4,
               repeat: Infinity,
               ease: "easeInOut"
             }}
-            className="absolute w-[80vw] h-[80vw] md:w-[400px] md:h-[400px] bg-purple-500/10 rounded-full blur-3xl"
+            className="w-[800px] h-[800px] bg-purple-500 rounded-full blur-3xl"
           />
         </div>
 
-        {/* Content */}
-        <div className="relative z-10 text-center max-w-2xl">
+        <div className="relative z-10 text-center px-6 max-w-2xl">
           <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ duration: 0.6, type: "spring" }}
-            className="mb-8"
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.6 }}
           >
-            <div className="w-32 h-32 mx-auto rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center shadow-[0_0_80px_rgba(168,85,247,0.6)]">
-              <span className="text-6xl text-white">👁️</span>
-            </div>
+            <h2 className="text-5xl md:text-6xl font-[var(--font-playfair)] text-white mb-6 leading-tight">
+              The <span className="italic gradient-text-oracle">Shadows</span>
+            </h2>
+
+            <p className="text-xl text-gray-400 mb-12 leading-relaxed">
+              These are the 3am thoughts.
+              <br />
+              The fears that whisper when you're alone.
+            </p>
+
+            <motion.button
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.8 }}
+              onClick={() => setShowIntro(false)}
+              className="btn-mystical text-lg px-10 py-4"
+            >
+              Face Them →
+            </motion.button>
           </motion.div>
-
-          <motion.h2
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="text-4xl md:text-5xl font-[var(--font-playfair)] text-white mb-6"
-          >
-            The <span className="gradient-text-oracle italic">Regret Visions</span>
-          </motion.h2>
-
-          <motion.p
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="text-gray-400 text-lg mb-12"
-          >
-            These are the 3am thoughts you're avoiding.
-            <br />
-            The fears that whisper when you're alone.
-          </motion.p>
-
-          <motion.button
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.7 }}
-            onClick={() => setShowIntro(false)}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="btn-mystical text-lg"
-          >
-            Face the Shadows →
-          </motion.button>
         </div>
       </motion.div>
     )
   }
 
+  const variants = {
+    enter: (direction: number) => ({
+      x: direction > 0 ? 1000 : -1000,
+      opacity: 0,
+      scale: 0.8
+    }),
+    center: {
+      x: 0,
+      opacity: 1,
+      scale: 1
+    },
+    exit: (direction: number) => ({
+      x: direction < 0 ? 1000 : -1000,
+      opacity: 0,
+      scale: 0.8
+    })
+  }
+
   return (
-    <div className="fixed inset-0 bg-black flex items-center justify-center overflow-hidden touch-none text-white selection:bg-purple-900/50">
-      {/* Progress dots - fixed at top */}
-      <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 flex gap-2 w-full max-w-md px-6 pointer-events-none">
-        {Array.from({ length: totalCards }).map((_, i) => (
-          <div
-            key={i}
-            className={`h-1 flex-1 rounded-full transition-all duration-300 ${
-              i < overallIndex ? 'bg-white/80' :
-              i === overallIndex ? 'bg-white relative after:absolute after:inset-0 after:bg-white after:blur-[4px]' :
-              'bg-white/20'
-            }`}
+    <div className="fixed inset-0 bg-black flex items-center justify-center overflow-hidden">
+      {/* Animated background */}
+      <div className="absolute inset-0">
+        <motion.div
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.05, 0.1, 0.05]
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-purple-600 rounded-full blur-3xl"
+        />
+      </div>
+
+      {/* Progress bar - sleek top bar */}
+      <div className="fixed top-0 left-0 right-0 z-50">
+        <div className="h-1 bg-gray-900">
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: `${((overallIndex + 1) / totalCards) * 100}%` }}
+            className="h-full bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500"
           />
-        ))}
+        </div>
       </div>
 
       {/* Path indicator */}
-      <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
-        <span className="text-purple-400 font-mono text-xs tracking-[0.2em] uppercase bg-black/50 px-4 py-1.5 rounded-full border border-purple-500/20 backdrop-blur-md">
-          {currentPath === 'pathA' ? 'IF YOU GO' : 'IF YOU STAY'}
-        </span>
+      <div className="fixed top-8 left-1/2 -translate-x-1/2 z-50">
+        <motion.div
+          animate={{ opacity: [0.6, 1, 0.6] }}
+          transition={{ duration: 2, repeat: Infinity }}
+          className="px-4 py-2 bg-purple-500/10 border border-purple-500/30 rounded-full backdrop-blur-sm"
+        >
+          <span className="text-purple-400 font-mono text-xs tracking-[0.3em] uppercase">
+            {currentPath === 'pathA' ? 'If You Go' : 'If You Stay'}
+          </span>
+        </motion.div>
       </div>
 
-      {/* Swipeable card */}
-      <AnimatePresence initial={false} custom={direction} mode="wait">
-        <motion.div
-          key={`${currentPath}-${currentIndex}`}
-          custom={direction}
-          variants={variants}
-          initial="enter"
-          animate="center"
-          exit="exit"
-          transition={{
-            x: { type: "spring", stiffness: 300, damping: 30 },
-            opacity: { duration: 0.2 },
-            scale: { duration: 0.2 }
-          }}
-          drag="x"
-          dragConstraints={{ left: 0, right: 0 }}
-          dragElastic={0.7}
-          onDragEnd={(e, { offset, velocity }: PanInfo) => {
-            const swipe = offset.x
-            if (Math.abs(swipe) > 100 || Math.abs(velocity.x) > 500) {
-              handleSwipe(swipe)
-            }
-          }}
-          className="absolute inset-0 flex items-center justify-center p-6 sm:p-12 w-full cursor-grab active:cursor-grabbing"
-        >
-          {/* Full screen card content */}
-          <div className="w-full max-w-3xl h-full pb-20 pt-32 flex flex-col justify-center">
-            {/* Ambient glow matching likelihood */}
-            <div 
-              className="absolute inset-0 opacity-20 blur-3xl -z-10 transition-colors duration-1000"
-              style={{
-                background: currentCard?.likelihood?.toLowerCase()?.includes('high') ? 'radial-gradient(circle, #ef4444 0%, transparent 70%)' :
-                            currentCard?.likelihood?.toLowerCase()?.includes('medium') ? 'radial-gradient(circle, #f59e0b 0%, transparent 70%)' : 
-                            'radial-gradient(circle, #10b981 0%, transparent 70%)'
-              }}
-            />
+      {/* Counter */}
+      <div className="fixed top-8 right-8 z-50 text-gray-500 font-mono text-sm">
+        {overallIndex + 1} / {totalCards}
+      </div>
 
-            <div className="flex-1 flex flex-col justify-center text-center space-y-10 items-center">
-              {/* Category */}
-              {currentCard?.category && (
-                <div className="flex flex-wrap justify-center gap-2 mb-2">
-                  {currentCard.category.split(',').map((cat: string, i: number) => (
-                    <span
-                      key={i}
-                      className="px-4 py-1.5 bg-white/5 border border-white/10 rounded-full text-white/70 text-xs font-[var(--font-dm-mono)] uppercase tracking-widest backdrop-blur-sm"
-                    >
-                      {cat.trim()}
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              {/* Title - HUGE */}
-              <h1 className="text-4xl sm:text-5xl md:text-7xl font-[var(--font-playfair)] text-white leading-[1.1] tracking-tight text-balance">
-                {/* @ts-ignore */}
-                {currentCard?.scenario || currentCard?.content || "Unknown Vision"}
-              </h1>
-
-              {/* Description - Medium */}
-              <p className="text-xl md:text-2xl text-white/60 leading-relaxed font-light text-balance max-w-2xl">
-                {/* @ts-ignore */}
-                {currentCard?.description || currentCard?.content || "Description unavailable for this vision."}
-              </p>
-
-              {/* Likelihood meter */}
-              {currentCard?.likelihood && (
-                <div className="w-full max-w-sm mt-8 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-white/40 uppercase tracking-[0.2em] text-[10px] font-bold">
-                      Likelihood
-                    </span>
-                    <span className="text-white font-[var(--font-dm-mono)] text-sm tracking-widest uppercase bg-white/10 px-3 py-1 rounded-md">
-                      {currentCard.likelihood}
-                    </span>
-                  </div>
-                  <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ 
-                        width: currentCard.likelihood.toLowerCase().includes('high') ? '85%' :
-                               currentCard.likelihood.toLowerCase().includes('medium') ? '50%' : '20%'
-                      }}
-                      className="h-full bg-white relative after:absolute after:inset-0 after:bg-white after:blur-[2px]"
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Navigation hint (bottom) */}
-            <div className="fixed bottom-8 left-0 right-0 text-center">
-              <motion.div 
-                animate={{ opacity: [0.3, 0.7, 0.3] }}
-                transition={{ duration: 2, repeat: Infinity }}
-                className="text-white/40 text-[11px] font-[var(--font-dm-mono)] uppercase tracking-[0.3em]"
+      {/* Swipeable card container */}
+      <div className="relative w-full h-full flex items-center justify-center px-6">
+        <AnimatePresence initial={false} custom={direction} mode="wait">
+          <motion.div
+            key={`${currentPath}-${currentIndex}`}
+            custom={direction}
+            variants={variants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{
+              x: { type: "spring", stiffness: 300, damping: 30 },
+              opacity: { duration: 0.3 },
+              scale: { duration: 0.3 }
+            }}
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.2}
+            onDragEnd={(e, { offset, velocity }: PanInfo) => {
+              const swipe = Math.abs(offset.x) * velocity.x
+              if (swipe > 5000) {
+                offset.x > 0 ? handleNext() : handlePrev()
+              }
+            }}
+            className="absolute inset-0 flex items-center justify-center"
+          >
+            {/* Card content - centered, not scrollable */}
+            <div className="w-full max-w-3xl flex flex-col items-center justify-center space-y-12 px-8">
+              
+              {/* Scenario title - HUGE and dramatic */}
+              <motion.h1
+                initial={{ y: 30, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.1 }}
+                className="text-4xl md:text-6xl lg:text-7xl font-[var(--font-playfair)] text-white text-center leading-[1.1] max-w-4xl"
               >
-                ← Swipe to navigate →
-              </motion.div>
-            </div>
-          </div>
-        </motion.div>
-      </AnimatePresence>
+                {currentCard.scenario}
+              </motion.h1>
 
-      {/* Tap zones for non-swipe navigation */}
+              {/* Description - Medium, readable */}
+              <motion.p
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.2 }}
+                className="text-xl md:text-2xl text-gray-300 text-center leading-relaxed max-w-3xl"
+              >
+                {currentCard.description}
+              </motion.p>
+
+              {/* Likelihood meter - visual and clean */}
+              <motion.div
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.3 }}
+                className="w-full max-w-md space-y-4"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500 uppercase tracking-[0.2em] text-xs font-mono">
+                    Likelihood
+                  </span>
+                  <span className="text-purple-400 font-bold text-sm">
+                    {currentCard.likelihood}
+                  </span>
+                </div>
+                
+                <div className="relative h-3 bg-gray-900 rounded-full overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: getLikelihoodWidth(currentCard.likelihood) }}
+                    transition={{ delay: 0.5, duration: 0.8, ease: "easeOut" }}
+                    className={`h-full bg-gradient-to-r ${getLikelihoodGradient(currentCard.likelihood)} rounded-full`}
+                  />
+                  {/* Shine effect */}
+                  <motion.div
+                    animate={{ x: ['-100%', '200%'] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "linear", repeatDelay: 1 }}
+                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                  />
+                </div>
+              </motion.div>
+
+            </div>
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      {/* Navigation hint */}
+      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
+        <motion.div
+          animate={{ opacity: [0.3, 0.6, 0.3] }}
+          transition={{ duration: 2, repeat: Infinity }}
+          className="text-gray-600 text-sm font-mono"
+        >
+          ← Swipe or tap edges →
+        </motion.div>
+      </div>
+
+      {/* Invisible tap zones */}
       <button
         onClick={handlePrev}
         disabled={currentPath === 'pathA' && currentIndex === 0}
-        className="fixed left-0 top-0 bottom-0 w-[20vw] z-40 opacity-0"
+        className="fixed left-0 top-0 bottom-0 w-1/4 z-40 opacity-0 hover:opacity-5 bg-white disabled:cursor-not-allowed transition-opacity"
         aria-label="Previous"
       />
       <button
         onClick={handleNext}
-        className="fixed right-0 top-0 bottom-0 w-[20vw] z-40 opacity-0"
+        className="fixed right-0 top-0 bottom-0 w-1/4 z-40 opacity-0 hover:opacity-5 bg-white transition-opacity"
         aria-label="Next"
       />
     </div>
