@@ -83,6 +83,9 @@ export function UpgradeModal({ isOpen, onClose }: UpgradeModalProps) {
                   <p className="text-gray-400 text-lg">
                     Upgrade to continue exploring your futures
                   </p>
+                  <p className="text-gray-400 text-sm mb-4">
+                    2 per day • 10 per month
+                  </p>
                 </motion.div>
               </div>
 

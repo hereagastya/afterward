@@ -192,13 +192,17 @@ export default function Home() {
         body: JSON.stringify({ decision, answers: completedAnswers }),
       })
 
+      // Handle rate limit error FIRST
+      if (simRes.status === 429) {
+        const errorData = await simRes.json().catch(() => ({}))
+        console.log("Rate limit hit:", errorData.message)
+        setShowUpgradeModal(true)  // Show pricing modal
+        setFlowState("input")      // Return to input screen
+        return
+      }
+
       if (!simRes.ok) {
         const errorData = await simRes.json().catch(() => ({}))
-        if (simRes.status === 429) {
-          setShowUpgradeModal(true)
-          setFlowState("input")
-          return
-        }
         throw new Error(errorData.error || "Failed to generate simulations")
       }
 

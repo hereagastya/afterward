@@ -3,6 +3,7 @@ import { gemini } from '@/lib/gemini';
 import { QuestionAnswer, DualPathSimulationData } from '@/lib/types';
 import { z } from 'zod';
 import { auth, currentUser } from '@clerk/nextjs/server';
+import { checkRateLimit, incrementDecisionCount } from '@/lib/rate-limit';
 import { prisma } from '@/lib/db';
 
 const RequestSchema = z.object({
@@ -69,75 +70,9 @@ function formatAnswersForPrompt(answers: QuestionAnswer[]): string {
 export async function POST(req: Request) {
   try {
     const { userId } = await auth();
-    const clerkUser = await currentUser();
-    const clerkEmail = clerkUser?.emailAddresses?.[0]?.emailAddress;
     
-    // Rate Limiting Check (only for logged-in users)
-    if (userId) {
-      const user = await prisma.user.findUnique({
-        where: { clerkId: userId }
-      });
-
-      if (user) {
-        const now = new Date();
-
-        // Daily reset logic
-        const lastDaily = new Date(user.lastDailyReset);
-        const isNewDay = now.getDate() !== lastDaily.getDate() || 
-                         now.getMonth() !== lastDaily.getMonth() || 
-                         now.getFullYear() !== lastDaily.getFullYear();
-        
-        // Monthly reset logic
-        const lastMonthly = new Date(user.lastMonthlyReset);
-        const isNewMonth = now.getMonth() !== lastMonthly.getMonth() || 
-                           now.getFullYear() !== lastMonthly.getFullYear();
-
-        let dailyCount = user.dailyDecisionCount;
-        let monthlyCount = user.monthlyDecisionCount;
-
-        // Reset counters if needed
-        if (isNewDay) {
-          dailyCount = 0;
-          await prisma.user.update({
-             where: { id: user.id },
-             data: { dailyDecisionCount: 0, lastDailyReset: now }
-          });
-        }
-
-        if (isNewMonth) {
-          monthlyCount = 0;
-          await prisma.user.update({
-             where: { id: user.id },
-             data: { monthlyDecisionCount: 0, lastMonthlyReset: now }
-          });
-        }
-
-        // Check limits for free users (2/day, 10/month)
-        const bypassRateLimit = user.isPro || user.email === 'sharmaagastya72@gmail.com' || clerkEmail === 'sharmaagastya72@gmail.com';
-        if (!bypassRateLimit) {
-            if (dailyCount >= 2) {
-              return NextResponse.json(
-                  { error: "You've reached your daily limit of 2 decisions. Paid plans coming soon!", code: "RATE_LIMIT_DAILY" },
-                  { status: 429 }
-              );
-            }
-            if (monthlyCount >= 10) {
-              return NextResponse.json(
-                  { error: "You've reached your monthly limit of 10 decisions. Paid plans coming soon!", code: "RATE_LIMIT_MONTHLY" },
-                  { status: 429 }
-              );
-            }
-        }
-        
-        // Increment counters
-        await prisma.user.update({
-            where: { id: user.id },
-            data: {
-                dailyDecisionCount: dailyCount + 1,
-                monthlyDecisionCount: monthlyCount + 1
-            }
-        });
-      }
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await req.json();
@@ -148,6 +83,21 @@ export async function POST(req: Request) {
     }
 
     const { decision, answers } = result.data;
+
+    // CHECK RATE LIMIT FIRST (before expensive API call)
+    const rateLimitResult = await checkRateLimit(userId);
+    
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        { 
+          error: "rate_limit_exceeded",
+          message: rateLimitResult.message || "You've reached your limit. Upgrade to continue."
+        },
+        { status: 429 }
+      );
+    }
+
+
 
     let simulations: DualPathSimulationData;
 
@@ -260,6 +210,9 @@ export async function POST(req: Request) {
         throw geminiError;
       }
     }
+
+    // Increment counter AFTER successful generation
+    await incrementDecisionCount(userId);
 
     return NextResponse.json(simulations);
 

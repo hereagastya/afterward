@@ -1,71 +1,129 @@
-import { prisma } from '@/lib/db';
-
-const DAILY_LIMIT = 2;
-const MONTHLY_LIMIT = 10;
-const DAY_MS = 24 * 60 * 60 * 1000;
-const MONTH_MS = 30 * DAY_MS;
+import { prisma } from './db'
 
 export interface RateLimitResult {
-  allowed: boolean;
-  limitType?: 'daily' | 'monthly';
-  remainingDaily: number;
-  remainingMonthly: number;
+  allowed: boolean
+  message?: string
+  dailyRemaining?: number
+  monthlyRemaining?: number
 }
 
+const DAILY_LIMIT = 2
+const MONTHLY_LIMIT = 10
+
+// Developer bypass
+const BYPASS_EMAILS = ['sharmaagastya72@gmail.com']
+
 export async function checkRateLimit(userId: string): Promise<RateLimitResult> {
-  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const user = await prisma.user.findUnique({
+    where: { clerkId: userId },
+    select: {
+      email: true,
+      isPro: true,
+      dailyDecisionCount: true,
+      monthlyDecisionCount: true,
+      lastDailyReset: true,
+      lastMonthlyReset: true
+    }
+  })
 
   if (!user) {
-    return { allowed: false, limitType: 'daily', remainingDaily: 0, remainingMonthly: 0 };
+    throw new Error("User not found")
   }
 
-  // Pro users have unlimited access
-  if (user.isPro) {
-    return { allowed: true, remainingDaily: Infinity, remainingMonthly: Infinity };
+  // Bypass for Pro users and developer
+  if (user.isPro || BYPASS_EMAILS.includes(user.email)) {
+    return { allowed: true }
   }
 
-  const now = new Date();
-  let dailyCount = user.dailyDecisionCount;
-  let monthlyCount = user.monthlyDecisionCount;
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1)
 
-  // Reset daily counter if 24 hours have passed
-  if (now.getTime() - user.lastDailyReset.getTime() >= DAY_MS) {
-    dailyCount = 0;
-    await prisma.user.update({
-      where: { id: userId },
-      data: { dailyDecisionCount: 0, lastDailyReset: now },
-    });
+  let dailyCount = user.dailyDecisionCount
+  let monthlyCount = user.monthlyDecisionCount
+
+  // Reset daily counter if it's a new day
+  if (!user.lastDailyReset || user.lastDailyReset < today) {
+    dailyCount = 0
   }
 
-  // Reset monthly counter if 30 days have passed
-  if (now.getTime() - user.lastMonthlyReset.getTime() >= MONTH_MS) {
-    monthlyCount = 0;
-    await prisma.user.update({
-      where: { id: userId },
-      data: { monthlyDecisionCount: 0, lastMonthlyReset: now },
-    });
+  // Reset monthly counter if it's a new month
+  if (!user.lastMonthlyReset || user.lastMonthlyReset < thisMonth) {
+    monthlyCount = 0
   }
 
-  const remainingDaily = Math.max(0, DAILY_LIMIT - dailyCount);
-  const remainingMonthly = Math.max(0, MONTHLY_LIMIT - monthlyCount);
-
+  // Check limits
   if (dailyCount >= DAILY_LIMIT) {
-    return { allowed: false, limitType: 'daily', remainingDaily: 0, remainingMonthly };
+    return {
+      allowed: false,
+      message: `You've reached your daily limit of ${DAILY_LIMIT} decisions. Upgrade to Pro for 50/month or Premium for unlimited.`,
+      dailyRemaining: 0,
+      monthlyRemaining: MONTHLY_LIMIT - monthlyCount
+    }
   }
 
   if (monthlyCount >= MONTHLY_LIMIT) {
-    return { allowed: false, limitType: 'monthly', remainingDaily, remainingMonthly: 0 };
+    return {
+      allowed: false,
+      message: `You've reached your monthly limit of ${MONTHLY_LIMIT} decisions. Upgrade to Pro for 50/month or Premium for unlimited.`,
+      dailyRemaining: DAILY_LIMIT - dailyCount,
+      monthlyRemaining: 0
+    }
   }
 
-  return { allowed: true, remainingDaily, remainingMonthly };
+  return {
+    allowed: true,
+    dailyRemaining: DAILY_LIMIT - dailyCount - 1,
+    monthlyRemaining: MONTHLY_LIMIT - monthlyCount - 1
+  }
 }
 
 export async function incrementDecisionCount(userId: string): Promise<void> {
+  const user = await prisma.user.findUnique({
+    where: { clerkId: userId },
+    select: {
+      email: true,
+      isPro: true,
+      dailyDecisionCount: true,
+      monthlyDecisionCount: true,
+      lastDailyReset: true,
+      lastMonthlyReset: true
+    }
+  })
+
+  if (!user) {
+    throw new Error("User not found")
+  }
+
+  // Don't increment for Pro users or developer
+  if (user.isPro || BYPASS_EMAILS.includes(user.email)) {
+    return
+  }
+
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+
+  let dailyCount = user.dailyDecisionCount
+  let monthlyCount = user.monthlyDecisionCount
+
+  // Reset counters if needed
+  if (!user.lastDailyReset || user.lastDailyReset < today) {
+    dailyCount = 0
+  }
+
+  if (!user.lastMonthlyReset || user.lastMonthlyReset < thisMonth) {
+    monthlyCount = 0
+  }
+
+  // Increment both counters
   await prisma.user.update({
-    where: { id: userId },
+    where: { clerkId: userId },
     data: {
-      dailyDecisionCount: { increment: 1 },
-      monthlyDecisionCount: { increment: 1 },
-    },
-  });
+      dailyDecisionCount: dailyCount + 1,
+      monthlyDecisionCount: monthlyCount + 1,
+      lastDailyReset: today,
+      lastMonthlyReset: thisMonth
+    }
+  })
 }
