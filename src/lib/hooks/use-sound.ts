@@ -2,8 +2,8 @@ import { useCallback } from 'react'
 
 export function useSound() {
   const playBell = useCallback(() => {
-    // Tibetan singing bowl (deep)
-    const audio = new Audio('https://cdn.pixabay.com/audio/2021/08/04/audio_12b0c7443c.mp3')
+    // Deep om chant (very mystical, time-travel vibe)
+    const audio = new Audio('https://cdn.pixabay.com/audio/2022/03/24/audio_d1718ab41b.mp3')
     audio.volume = 0.25
     audio.play().catch(() => {})
   }, [])

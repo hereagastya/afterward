@@ -19,7 +19,7 @@ import {
 } from "@/lib/types"
 import { useAuth, useClerk, useUser } from "@clerk/nextjs"
 
-import { Loader2, Target, Zap, Sparkles } from "lucide-react"
+import { Target, Zap, Sparkles } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { simulationLoadingMessages } from "@/lib/constants/loading-messages"
 
@@ -579,28 +579,66 @@ export default function Home() {
             </motion.div>
           )}
 
-          {/* ═══════════════ SIMULATING STATE (Loading) ═══════════════ */}
+          {/* ═══════════════ SIMULATING STATE — Mystical Loading ═══════════════ */}
           {flowState === "simulating" && (
             <motion.div
               key="simulating"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex flex-col items-center justify-center min-h-screen space-y-6 p-6"
+              className="flex flex-col items-center justify-center min-h-screen relative overflow-hidden"
             >
-              <motion.div
-                animate={{ scale: [1, 1.1, 1] }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                className="w-20 h-20 rounded-full bg-gradient-to-r from-[#7c5cbf] to-[#9d7de8] flex items-center justify-center"
-              >
-                <Loader2 className="w-10 h-10 text-white animate-spin" />
-              </motion.div>
-              <div className="text-center space-y-2">
-                <p className="text-[var(--text-primary)] text-xl font-light">
-                  {simulationLoadingMessages[messageIndex]}
-                </p>
-                <p className="text-[var(--text-muted)] text-sm">Usually takes 10-15 seconds</p>
+              {/* Background gradient orb */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <motion.div
+                  animate={{
+                    scale: [1, 1.3, 1],
+                    opacity: [0.1, 0.2, 0.1]
+                  }}
+                  transition={{
+                    duration: 4,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                  className="w-[800px] h-[800px] bg-purple-500 rounded-full blur-3xl"
+                />
               </div>
+
+              {/* Animated gradient line */}
+              <div className="relative z-10 w-full max-w-md mb-12">
+                <div className="h-1 bg-gray-900 rounded-full overflow-hidden">
+                  <motion.div
+                    animate={{
+                      x: ['-100%', '100%']
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      ease: "linear"
+                    }}
+                    className="h-full w-1/3 bg-gradient-to-r from-transparent via-purple-500 to-transparent"
+                  />
+                </div>
+              </div>
+
+              {/* Witty loading text */}
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={messageIndex}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.5 }}
+                  className="relative z-10 text-center space-y-4 px-6"
+                >
+                  <p className="text-2xl md:text-3xl font-[var(--font-playfair)] text-white">
+                    {simulationLoadingMessages[messageIndex]}
+                  </p>
+                  <p className="text-gray-500 text-sm font-mono">
+                    Simulating your regret...
+                  </p>
+                </motion.div>
+              </AnimatePresence>
             </motion.div>
           )}
 

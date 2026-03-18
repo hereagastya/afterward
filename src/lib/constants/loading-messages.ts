@@ -6,14 +6,21 @@ export const questionLoadingMessages = [
 ]
 
 export const simulationLoadingMessages = [
-  "Fast-forwarding to next year...",
-  "Checking the multiverse...",
-  "Simulating 847 possible futures...",
   "Consulting your future self...",
-  "Time traveling (legally)...",
-  "Running the numbers your brain won't...",
+  "Running the numbers on your poor choices...",
   "Calculating regret probability...",
-  "Mapping emotional trajectories..."
+  "Simulating awkward conversations...",
+  "Predicting your 3am thoughts...",
+  "Mapping out your anxiety timeline...",
+  "Generating worst-case scenarios...",
+  "Loading existential dread...",
+  "Asking the universe what it thinks...",
+  "Channeling your inner overthinker...",
+  "Brewing a timeline of consequences...",
+  "Summoning the ghosts of future regret...",
+  "Peering into parallel universes...",
+  "Teaching AI to worry like you do...",
+  "Stress-testing your gut feeling...",
 ]
 
 export const flashcardLoadingMessages = [
