@@ -1,0 +1,6 @@
+{
+  "crons": [{
+    "path": "/api/cron/send-replay-emails",
+    "schedule": "0 9 * * *"
+  }]
+}

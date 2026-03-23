@@ -10,12 +10,17 @@ import { FeedbackPopup } from "@/components/feedback-popup"
 import { LimitPopup } from "@/components/limit-popup"
 import { Navbar } from "@/components/navbar"
 import { UpgradeModal } from "@/components/upgrade-modal"
+import { ConfidenceMeter } from "@/components/confidence-meter"
+import { PredictionResult } from "@/components/prediction-result"
+import { analyzeAnswers } from "@/lib/analyze-answers"
+import { ReplayOptInModal } from "@/components/replay-opt-in-modal"
 import { 
   FlowState, 
   QuestionAnswer, 
   DualPathSimulationData, 
   FlashcardSet,
-  UserChoice 
+  UserChoice,
+  AnalysisResult
 } from "@/lib/types"
 import { useAuth, useClerk, useUser } from "@clerk/nextjs"
 
@@ -90,6 +95,9 @@ export default function Home() {
   const [showFeedback, setShowFeedback] = useState(false)
   const [showLimitPopup, setShowLimitPopup] = useState(false)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [showReplayOptIn, setShowReplayOptIn] = useState(false)
+  const [analysis, setAnalysis] = useState<AnalysisResult | null>(null)
+  const [showPredictionResult, setShowPredictionResult] = useState(false)
 
   // Hero textarea ref
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -180,24 +188,31 @@ export default function Home() {
     setFlowState("questions")
   }
 
-  const handleQuestionsComplete = async (completedAnswers: QuestionAnswer[]) => {
+  const handleQuestionsComplete = (completedAnswers: QuestionAnswer[]) => {
     setAnswers(completedAnswers)
+    
+    // Generate analysis immediately
+    const analysisResult = analyzeAnswers(completedAnswers, decision)
+    setAnalysis(analysisResult)
+    
+    // Show analysis screen
+    setFlowState("analysis")
+  }
+
+  const handleContinueFromAnalysis = async () => {
     setFlowState("simulating")
 
     try {
-      // Generate simulations
+      // 1. Generate simulations
       const simRes = await fetch("/api/simulate-paths", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ decision, answers: completedAnswers }),
+        body: JSON.stringify({ decision, answers }),
       })
 
-      // Handle rate limit error FIRST
       if (simRes.status === 429) {
-        const errorData = await simRes.json().catch(() => ({}))
-        console.log("Rate limit hit:", errorData.message)
-        setShowUpgradeModal(true)  // Show pricing modal
-        setFlowState("input")      // Return to input screen
+        setShowUpgradeModal(true)
+        setFlowState("input")
         return
       }
 
@@ -209,11 +224,11 @@ export default function Home() {
       const simData = await simRes.json()
       setSimulations(simData)
 
-      // Generate flashcards immediately after simulations
+      // 2. Generate flashcards
       const flashRes = await fetch("/api/flashcards", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ decision, answers: completedAnswers, simulations: simData }),
+        body: JSON.stringify({ decision, answers, simulations: simData }),
       })
 
       if (!flashRes.ok) {
@@ -240,6 +255,11 @@ export default function Home() {
   const handleDecision = async (choice: UserChoice) => {
     setUserChoice(choice)
 
+    // Check if prediction was correct
+    if (analysis && (choice === 'go' || choice === 'stay')) {
+      setShowPredictionResult(true)
+    }
+
     if (isSignedIn && simulations && flashcards) {
       try {
         const res = await fetch("/api/save-decision", {
@@ -251,6 +271,7 @@ export default function Home() {
             simulations,
             flashcards,
             userChoice: choice,
+            analysis
           }),
         })
 
@@ -268,6 +289,7 @@ export default function Home() {
         const data = await res.json()
         if (data.decisionId) {
           setSavedDecisionId(data.decisionId)
+          setShowReplayOptIn(true)
         }
       } catch (err) {
         console.error("Save error:", err)
@@ -290,6 +312,8 @@ export default function Home() {
     setSimulations(null)
     setFlashcards(null)
     setUserChoice(null)
+    setAnalysis(null)
+    setShowPredictionResult(false)
     setError("")
     setSavedDecisionId(null)
     setShowFeedback(false)
@@ -509,6 +533,177 @@ export default function Home() {
                         </div>
                       )
                     })}
+              </div>
+              </div>
+              </section>
+
+              {/* ─── LIVE DEMO SECTION ──────────────────────────────────── */}
+              <section className="relative py-24 px-6 overflow-hidden">
+                {/* Background gradient */}
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-purple-900/5 to-transparent" />
+                
+                <div className="max-w-6xl mx-auto relative z-10">
+                  {/* Section header */}
+                  <div className="scroll-reveal text-center mb-16">
+                    <p className="text-[var(--text-muted)] text-[10px] font-[var(--font-dm-mono)] tracking-[0.35em] uppercase mb-4">
+                      See it in action
+                    </p>
+                    <h2 className="font-[var(--font-playfair)] text-[var(--text-primary)] text-3xl md:text-5xl font-light mb-6">
+                      This is what you'll see
+                    </h2>
+                    <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+                      A real example: <span className="text-white">"Should I quit my job to start a bakery?"</span>
+                    </p>
+                  </div>
+
+                  {/* Split comparison cards */}
+                  <div className="scroll-reveal grid md:grid-cols-2 gap-8 max-w-5xl mx-auto mb-12">
+                    
+                    {/* LEFT: If You Go */}
+                    <div className="group relative">
+                      <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-transparent rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                      
+                      <div className="relative oracle-card rounded-2xl p-8 bg-[rgba(15,15,20,0.8)] backdrop-blur-sm border border-green-500/20 hover:border-green-500/40 transition-all">
+                        {/* Badge */}
+                        <div className="text-center mb-8">
+                          <span className="inline-block px-4 py-2 bg-green-500/10 border border-green-500/30 rounded-full text-green-400 text-xs font-mono uppercase tracking-wider">
+                            If You Go
+                          </span>
+                        </div>
+
+                        {/* Timeline moments */}
+                        <div className="space-y-6">
+                          {/* NOW */}
+                          <div className="border-l-2 border-green-500/30 pl-6 hover:border-green-500/60 transition-all">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-xs text-gray-500 font-mono uppercase tracking-wider">Now</span>
+                              <div className="h-px flex-1 bg-gradient-to-r from-green-500/20 to-transparent" />
+                            </div>
+                            <h4 className="text-white font-semibold text-xl mb-2">The Leap</h4>
+                            <p className="text-gray-400 leading-relaxed">
+                              You quit today. Heart racing. No safety net left.
+                            </p>
+                          </div>
+
+                          {/* 3 MONTHS */}
+                          <div className="border-l-2 border-green-500/30 pl-6 hover:border-green-500/60 transition-all">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-xs text-gray-500 font-mono uppercase tracking-wider">3 Months</span>
+                              <div className="h-px flex-1 bg-gradient-to-r from-green-500/20 to-transparent" />
+                            </div>
+                            <h4 className="text-white font-semibold text-xl mb-2">The Grind</h4>
+                            <p className="text-gray-400 leading-relaxed">
+                              Flour under nails. 4am starts. Barely breaking even.
+                            </p>
+                          </div>
+
+                          {/* 1 YEAR */}
+                          <div className="border-l-2 border-green-500/30 pl-6 hover:border-green-500/60 transition-all">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-xs text-gray-500 font-mono uppercase tracking-wider">1 Year</span>
+                              <div className="h-px flex-1 bg-gradient-to-r from-green-500/20 to-transparent" />
+                            </div>
+                            <h4 className="text-white font-semibold text-xl mb-2">Finding Rhythm</h4>
+                            <p className="text-gray-400 leading-relaxed">
+                              First profit month. Regulars know your name. Exhausted but alive.
+                            </p>
+                          </div>
+
+                          {/* 3 YEARS */}
+                          <div className="border-l-2 border-green-500/30 pl-6 hover:border-green-500/60 transition-all">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-xs text-gray-500 font-mono uppercase tracking-wider">3 Years</span>
+                              <div className="h-px flex-1 bg-gradient-to-r from-green-500/20 to-transparent" />
+                            </div>
+                            <h4 className="text-white font-semibold text-xl mb-2">Established</h4>
+                            <p className="text-gray-400 leading-relaxed">
+                              Two locations. Featured in local press. You own something.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* RIGHT: If You Stay */}
+                    <div className="group relative">
+                      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                      
+                      <div className="relative oracle-card rounded-2xl p-8 bg-[rgba(15,15,20,0.8)] backdrop-blur-sm border border-blue-500/20 hover:border-blue-500/40 transition-all">
+                        {/* Badge */}
+                        <div className="text-center mb-8">
+                          <span className="inline-block px-4 py-2 bg-blue-500/10 border border-blue-500/30 rounded-full text-blue-400 text-xs font-mono uppercase tracking-wider">
+                            If You Stay
+                          </span>
+                        </div>
+
+                        {/* Timeline moments */}
+                        <div className="space-y-6">
+                          {/* NOW */}
+                          <div className="border-l-2 border-blue-500/30 pl-6 hover:border-blue-500/60 transition-all">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-xs text-gray-500 font-mono uppercase tracking-wider">Now</span>
+                              <div className="h-px flex-1 bg-gradient-to-r from-blue-500/20 to-transparent" />
+                            </div>
+                            <h4 className="text-white font-semibold text-xl mb-2">The Safe Choice</h4>
+                            <p className="text-gray-400 leading-relaxed">
+                              Another Monday. Same desk. Paycheck clears Friday.
+                            </p>
+                          </div>
+
+                          {/* 3 MONTHS */}
+                          <div className="border-l-2 border-blue-500/30 pl-6 hover:border-blue-500/60 transition-all">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-xs text-gray-500 font-mono uppercase tracking-wider">3 Months</span>
+                              <div className="h-px flex-1 bg-gradient-to-r from-blue-500/20 to-transparent" />
+                            </div>
+                            <h4 className="text-white font-semibold text-xl mb-2">Quiet Erosion</h4>
+                            <p className="text-gray-400 leading-relaxed">
+                              You stopped baking at home. Too tired. Too numb.
+                            </p>
+                          </div>
+
+                          {/* 1 YEAR */}
+                          <div className="border-l-2 border-blue-500/30 pl-6 hover:border-blue-500/60 transition-all">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-xs text-gray-500 font-mono uppercase tracking-wider">1 Year</span>
+                              <div className="h-px flex-1 bg-gradient-to-r from-blue-500/20 to-transparent" />
+                            </div>
+                            <h4 className="text-white font-semibold text-xl mb-2">Comfortable Regret</h4>
+                            <p className="text-gray-400 leading-relaxed">
+                              Promotion came. More money, less life. You wonder 'what if.'
+                            </p>
+                          </div>
+
+                          {/* 3 YEARS */}
+                          <div className="border-l-2 border-blue-500/30 pl-6 hover:border-blue-500/60 transition-all">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-xs text-gray-500 font-mono uppercase tracking-wider">3 Years</span>
+                              <div className="h-px flex-1 bg-gradient-to-r from-blue-500/20 to-transparent" />
+                            </div>
+                            <h4 className="text-white font-semibold text-xl mb-2">The Settled Life</h4>
+                            <p className="text-gray-400 leading-relaxed">
+                              Good salary. Empty Sundays. That bakery dream feels like another life.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* CTA */}
+                  <div className="scroll-reveal text-center">
+                    <p className="text-gray-400 mb-6 text-lg">
+                      See your own decision play out like this
+                    </p>
+                    <button
+                      onClick={() => {
+                        window.scrollTo({ top: 0, behavior: 'smooth' })
+                        setTimeout(() => textareaRef.current?.focus(), 600)
+                      }}
+                      className="shimmer-btn px-10 py-4 rounded-xl bg-gradient-to-r from-[#7c5cbf] to-[#9d7de8] text-white font-semibold tracking-[0.15em] text-base hover:shadow-[0_0_50px_rgba(124,92,191,0.6)] transition-all cursor-pointer"
+                    >
+                      Try Your Decision →
+                    </button>
                   </div>
                 </div>
               </section>
@@ -575,6 +770,22 @@ export default function Home() {
                 decision={decision}
                 onComplete={handleQuestionsComplete}
                 onBack={handleReset}
+              />
+            </motion.div>
+          )}
+
+          {/* ═══════════════ ANALYSIS STATE ═══════════════ */}
+          {flowState === "analysis" && analysis && (
+            <motion.div
+              key="analysis"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="w-full"
+            >
+              <ConfidenceMeter 
+                analysis={analysis}
+                onContinue={handleContinueFromAnalysis}
               />
             </motion.div>
           )}
@@ -718,6 +929,25 @@ export default function Home() {
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
       />
+
+      {/* Replay Opt-in Modal */}
+      <ReplayOptInModal
+        isOpen={showReplayOptIn}
+        onClose={() => setShowReplayOptIn(false)}
+        decisionId={savedDecisionId || ''}
+        decision={decision}
+        userChoice={userChoice || 'go'}
+      />
+
+      {/* Prediction Result Popup */}
+      {showPredictionResult && analysis && userChoice && userChoice !== 'undecided' && (
+        <PredictionResult
+          wasCorrect={analysis.prediction === userChoice}
+          prediction={analysis.prediction}
+          actualChoice={userChoice}
+          reasoning={analysis.reasoning}
+        />
+      )}
     </main>
   )
 }

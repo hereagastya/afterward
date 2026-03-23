@@ -65,9 +65,22 @@ export interface FlashcardSet {
   stayFlashcards: FlashcardData[]
 }
 
+export interface AnalysisResult {
+  clarityScore: number
+  fearLevel: number
+  logicLevel: number
+  gutLevel: number
+  redFlags: string[]
+  prediction: 'go' | 'stay'
+  predictionConfidence: number
+  reasoning: string
+  emotionalState: string
+}
+
 export type FlowState = 
   | "input"          // Initial landing
   | "questions"      // Interrogation flow  
+  | "analysis"       // Confidence Meter visualization
   | "simulating"     // Loading simulation
   | "simulation"     // Two-path display
   | "flashcards"     // Regret flashcards

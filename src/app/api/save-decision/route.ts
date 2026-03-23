@@ -30,7 +30,8 @@ const RequestSchema = z.object({
     goFlashcards: z.array(z.any()),
     stayFlashcards: z.array(z.any())
   }),
-  userChoice: z.enum(["go", "stay", "undecided"])
+  userChoice: z.enum(["go", "stay", "undecided"]),
+  analysis: z.any().optional() // Make analysis optional to avoid breaking existing requests
 });
 
 export async function POST(req: Request) {
@@ -53,14 +54,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid input" }, { status: 400 });
     }
 
-    const { decision, answers, simulations, flashcards, userChoice } = result.data;
+    const { decision, answers, simulations, flashcards, userChoice, analysis } = result.data;
 
     // Find or create user
     let dbUser = await prisma.user.findUnique({ where: { clerkId: userId } });
     if (!dbUser) {
-      // In a real app we'd get email from Clerk token, but for now placeholder or handle better
-      // Try to find by email if possible? No, Clerk ID is source of truth.
-      // We'll create with a placeholder that will need updating or just ignore email unique constraint issues if they arise (unlikely for new users)
       dbUser = await prisma.user.create({
         data: {
           clerkId: userId,
@@ -69,9 +67,6 @@ export async function POST(req: Request) {
       });
     }
 
-    // Skip rate limits in save-decision to prevent double-counting.
-    // The rate limit check and increment happens entirely in simulate-paths.
-    
     // Create decision with all related data
     const savedDecision = await prisma.decision.create({
       data: {
@@ -79,6 +74,12 @@ export async function POST(req: Request) {
         query: decision,
         userChoice: userChoice,
         status: "active",
+        analysis: analysis || null,
+        clarityScore: analysis?.clarityScore || null,
+        fearLevel: analysis?.fearLevel || null,
+        logicLevel: analysis?.logicLevel || null,
+        predictionCorrect: analysis && userChoice !== "undecided" ? 
+          (analysis.prediction === userChoice) : null,
         questionAnswers: {
           create: answers.map((a) => ({
             question: a.question,

@@ -30,12 +30,29 @@ model Decision {
   context         String?          // Parsed context (e.g., "job change + entrepreneurship")
   userChoice      String?          // "go" | "stay" | "undecided" | null
   status          String?          @default("active") // "active" | "resolved" | "archived"
+  
+  // Decision Replay fields
+  replayEnabled   Boolean          @default(false)
+  replayEmail     String?
+  replayScheduled DateTime?
+  replayCompleted Boolean          @default(false)
+  actualOutcome   Json?
+
+  // Decision Confidence fields
+  analysis        Json?            // Store the full analysis
+  clarityScore    Int?             // 0-100
+  fearLevel       Int?             // 0-100
+  logicLevel      Int?             // 0-100
+  predictionCorrect Boolean?       // Was our prediction right?
+
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
   simulations     Simulation[]
   questionAnswers QuestionAnswer[]
   flashcards      Flashcard[]
   checkIns        CheckIn[]
+
+  @@index([replayScheduled])
 }
 
 model QuestionAnswer {
