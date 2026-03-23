@@ -244,7 +244,8 @@ export default function Home() {
     } catch (err: any) {
       console.error(err)
       setError(err.message || "Failed to generate simulations")
-      setFlowState("questions")
+      // Revert to analysis so they don't lose their context and can retry
+      setFlowState("analysis")
     }
   }
 

@@ -4,7 +4,7 @@ import { QuestionAnswer, DualPathSimulationData, FlashcardSet, TimelinePhase } f
 import { z } from 'zod';
 
 const RequestSchema = z.object({
-  decision: z.string().min(5).max(500),
+  decision: z.string().min(2).max(500),
   answers: z.array(z.object({
     question: z.string(),
     answer: z.string(),

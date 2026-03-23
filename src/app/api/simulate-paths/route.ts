@@ -7,7 +7,7 @@ import { checkRateLimit, incrementDecisionCount } from '@/lib/rate-limit';
 import { prisma } from '@/lib/db';
 
 const RequestSchema = z.object({
-  decision: z.string().min(5).max(500),
+  decision: z.string().min(2).max(500),
   answers: z.array(z.object({
     question: z.string(),
     answer: z.string(),
