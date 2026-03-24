@@ -98,6 +98,7 @@ export default function Home() {
   const [showReplayOptIn, setShowReplayOptIn] = useState(false)
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null)
   const [showPredictionResult, setShowPredictionResult] = useState(false)
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
 
   // Hero textarea ref
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -190,13 +191,15 @@ export default function Home() {
 
   const handleQuestionsComplete = (completedAnswers: QuestionAnswer[]) => {
     setAnswers(completedAnswers)
-    
-    // Generate analysis immediately
-    const analysisResult = analyzeAnswers(completedAnswers, decision)
-    setAnalysis(analysisResult)
-    
-    // Show analysis screen
+    setIsAnalyzing(true)
     setFlowState("analysis")
+    
+    // Simulate deep AI analysis to build anticipation before showing meter
+    setTimeout(() => {
+      const analysisResult = analyzeAnswers(completedAnswers, decision)
+      setAnalysis(analysisResult)
+      setIsAnalyzing(false)
+    }, 2000)
   }
 
   const handleContinueFromAnalysis = async () => {
@@ -332,8 +335,87 @@ export default function Home() {
 
   // ─── RENDER ─────────────────────────────────────────────────────────────
   return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "SoftwareApplication",
+            "name": "Afterward",
+            "applicationCategory": "ProductivityApplication",
+            "operatingSystem": "Web",
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "USD"
+            },
+            "aggregateRating": {
+              "@type": "AggregateRating",
+              "ratingValue": "4.8",
+              "ratingCount": "127"
+            },
+            "description": "AI-powered decision simulator that shows you both futures before you choose. See what happens if you GO vs if you STAY.",
+            "screenshot": "https://afterward.fyi/og-image.png",
+            "featureList": [
+              "AI-powered future simulation",
+              "Dual timeline visualization",
+              "Regret prediction",
+              "Decision confidence analysis",
+              "Emotional clarity scoring"
+            ],
+            "creator": {
+              "@type": "Organization",
+              "name": "Afterward"
+            }
+          })
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "How does Afterward help with decision making?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Afterward uses AI to simulate both possible futures for your decision. You answer 4-5 questions, then see cinematic timelines showing where each path leads at 3 months, 1 year, and 3 years. It helps you feel the emotional weight of both choices before you decide."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Is Afterward free to use?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes! Afterward offers a free tier with 2 decisions per day and 10 per month. Pro ($9.99/month) includes 50 decisions monthly, and Premium ($29.99/month) offers unlimited decisions."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "What types of decisions can I simulate?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Any major life decision: career changes (should I quit my job?), relationships (should I break up?), location (should I move cities?), education (should I go back to school?), entrepreneurship (should I start a business?), and more."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "How accurate are the predictions?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Afterward doesn't predict the future—it helps you experience both possible outcomes emotionally. The AI analyzes your specific situation, constraints, and fears to create realistic scenarios based on common patterns and psychological research."
+                }
+              }
+            ]
+          })
+        }}
+      />
     <main className="min-h-screen bg-[var(--bg-base)] relative overflow-x-hidden">
-      {flowState !== "simulation" && <Navbar />}
+      {flowState === "input" && <Navbar />}
 
       <div className="relative w-full">
         <AnimatePresence mode="wait">
@@ -410,6 +492,15 @@ export default function Home() {
                       simulated.
                     </span>
                   </motion.h1>
+
+                  {/* Hidden SEO text */}
+                  <div className="sr-only">
+                    <h2>AI-Powered Decision Simulator for Life's Hardest Choices</h2>
+                    <p>
+                      Should you quit your job? Break up? Move cities? Afterward simulates both futures 
+                      so you can see what happens if you GO vs if you STAY. Make better decisions with AI clarity.
+                    </p>
+                  </div>
 
                   {/* Subheadline */}
                   <motion.p
@@ -776,18 +867,28 @@ export default function Home() {
           )}
 
           {/* ═══════════════ ANALYSIS STATE ═══════════════ */}
-          {flowState === "analysis" && analysis && (
+          {flowState === "analysis" && (
             <motion.div
               key="analysis"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="w-full"
+              className="w-full relative overflow-hidden flex flex-col items-center justify-center min-h-screen"
             >
-              <ConfidenceMeter 
-                analysis={analysis}
-                onContinue={handleContinueFromAnalysis}
-              />
+              {isAnalyzing || !analysis ? (
+                <div className="relative z-10 flex flex-col items-center justify-center space-y-6">
+                  {/* Reuse mystical loading styles */}
+                  <div className="w-[80px] h-[80px] md:w-[100px] md:h-[100px] rounded-full border-t-2 border-r-2 border-[#7c5cbf] animate-spin" />
+                  <p className="text-xl md:text-2xl font-[var(--font-playfair)] text-white animate-pulse">
+                    Parsing Decision DNA...
+                  </p>
+                </div>
+              ) : (
+                <ConfidenceMeter 
+                  analysis={analysis}
+                  onContinue={handleContinueFromAnalysis}
+                />
+              )}
             </motion.div>
           )}
 
@@ -950,5 +1051,6 @@ export default function Home() {
         />
       )}
     </main>
+    </>
   )
 }

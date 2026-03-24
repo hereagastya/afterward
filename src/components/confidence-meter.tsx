@@ -61,8 +61,8 @@ export function ConfidenceMeter({ analysis, onContinue }: ConfidenceMeterProps) 
               <h2 className="text-3xl md:text-4xl font-[var(--font-playfair)] text-white mb-3">
                 Your Decision DNA 🧬
               </h2>
-              <p className="text-gray-400">
-                Here's what's really driving your choice
+              <p className="text-gray-400 max-w-md mx-auto">
+                We&apos;ve analyzed the emotional and logical weighting of your responses to reveal what&apos;s truly driving this choice.
               </p>
             </motion.div>
           </div>

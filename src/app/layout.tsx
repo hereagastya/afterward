@@ -25,9 +25,31 @@ const dmMono = DM_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://afterward.fyi"),
-  title: "Afterward — Decision Clarity",
-  description:
-    "Feel the consequences before they happen. AI-powered decision clarity that shows you both futures.",
+  title: {
+    default: "Afterward - AI Decision Simulator | See Both Futures Before You Choose",
+    template: "%s | Afterward"
+  },
+  description: "Stuck on a big decision? Afterward uses AI to simulate both futures—if you GO and if you STAY. See yourself 3 months, 1 year, and 3 years from now. Experience regret before it happens. Make better decisions with AI-powered clarity.",
+  keywords: [
+    "decision making tool",
+    "AI decision simulator",
+    "should I quit my job",
+    "life decision tool",
+    "career decision help",
+    "regret prediction",
+    "future simulator",
+    "decision anxiety",
+    "overcome indecision",
+    "what if calculator",
+    "AI life coach",
+    "decision clarity tool",
+    "simulate future outcomes",
+    "relationship decision help",
+    "career change tool"
+  ],
+  authors: [{ name: "Afterward" }],
+  creator: "Afterward",
+  publisher: "Afterward",
   icons: {
     icon: [
       { url: "/icon-32x32.png", sizes: "32x32", type: "image/png" },
@@ -41,17 +63,17 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   openGraph: {
     type: "website",
+    locale: "en_US",
     url: "https://afterward.fyi",
-    title: "Afterward — Decision Clarity",
-    description:
-      "Regret is better simulated. Feel the consequences before they happen with AI-powered decision clarity.",
+    title: "Afterward - See Both Futures Before You Choose",
+    description: "AI-powered decision simulator. Experience regret before it happens. See what happens if you GO vs if you STAY.",
     siteName: "Afterward",
     images: [
       {
-        url: "https://afterward.fyi/og-image.png",
+        url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Afterward — Regret is better simulated",
+        alt: "Afterward - Simulate regret before you feel it",
         type: "image/png",
       },
     ],
@@ -59,18 +81,26 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     site: "@Agastyabuilds",
-    title: "Afterward — Decision Clarity",
-    description:
-      "Regret is better simulated. Feel the consequences before they happen with AI-powered decision clarity.",
-    images: [
-      {
-        url: "https://afterward.fyi/twitter-image.png",
-        width: 1200,
-        height: 628,
-        alt: "Afterward — Regret is better simulated",
-      },
-    ],
+    title: "Afterward - AI Decision Simulator",
+    description: "See both futures before you choose. Simulate regret before you feel it.",
+    images: ["/og-image.png"],
+    creator: "@Agastyabuilds"
   },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  alternates: {
+    canonical: "https://afterward.fyi"
+  },
+  category: "productivity"
 };
 
 export default function RootLayout({

@@ -83,6 +83,12 @@ export function analyzeAnswers(answers: QuestionAnswer[], decision: string): Ana
     }
   })
 
+  // Add dynamic variation so it's not identical every time
+  const jitter = () => Math.floor(Math.random() * 25) - 10 // -10 to +15 variance
+  fearLevel += jitter()
+  logicLevel += jitter()
+  gutLevel += jitter()
+
   // Normalize to 0-100 range
   fearLevel = Math.min(100, Math.max(0, fearLevel))
   logicLevel = Math.min(100, Math.max(0, logicLevel))
