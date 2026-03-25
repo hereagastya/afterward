@@ -1,179 +1,126 @@
 "use client"
 
 import { useState } from "react"
-import { AnimatePresence } from "framer-motion"
-import { DualPathSimulationData } from "@/lib/types"
+import { AnimatePresence, motion } from "framer-motion"
+import { DualPathSimulation } from "@/lib/types"
 import { JourneyLanding } from "./journey-landing"
-import { MomentJourneyCard } from "./moment-journey-card"
-import { PathTransition } from "./path-transition"
-import { ComparisonScreen } from "./comparison-screen"
+import { ScenarioViewer } from "./scenario-viewer"
+import { TradeoffAnalysis } from "./tradeoff-analysis"
 import { FlashcardViewer } from "./flashcard-viewer"
 import { useSound } from "@/lib/hooks/use-sound"
 
 interface SimulationOutputProps {
-  simulations: DualPathSimulationData
-  flashcards: any // Your existing flashcard type
+  simulations: DualPathSimulation
+  flashcards: any
   onContinue: () => void
 }
 
-type JourneyStep =
-  | "landing"
-  | "pathA-0" | "pathA-1" | "pathA-2" | "pathA-3"
-  | "transition"
-  | "pathB-0" | "pathB-1" | "pathB-2" | "pathB-3"
-  | "comparison"
-  | "flashcards"
+type Step = "landing" | "scenarios" | "tradeoffs" | "flashcards"
 
 export function SimulationOutput({
   simulations,
   flashcards,
   onContinue
 }: SimulationOutputProps) {
-  const [step, setStep] = useState<JourneyStep>("landing")
+  const [step, setStep] = useState<Step>("landing")
   const { playFlip } = useSound()
 
-  const pathAMoments = simulations.pathA.phases
-  const pathBMoments = simulations.pathB.phases
-
-  const handleNext = () => {
+  const handleNext = (next: Step) => {
     playFlip()
-    const sequence: JourneyStep[] = [
-      "landing",
-      "pathA-0", "pathA-1", "pathA-2", "pathA-3",
-      "transition",
-      "pathB-0", "pathB-1", "pathB-2", "pathB-3",
-      "comparison",
-      "flashcards"
-    ]
-    
-    const currentIndex = sequence.indexOf(step)
-    if (currentIndex < sequence.length - 1) {
-      setStep(sequence[currentIndex + 1])
-    }
+    setStep(next)
   }
 
   return (
-    <AnimatePresence mode="wait">
-      {step === "landing" && (
-        <JourneyLanding key="landing" onBegin={handleNext} />
-      )}
+    <div className="min-h-screen relative">
+      <AnimatePresence mode="wait">
+        {/* Landing */}
+        {step === "landing" && (
+          <JourneyLanding
+            key="landing"
+            onBegin={() => handleNext("scenarios")}
+          />
+        )}
 
-      {step === "pathA-0" && (
-        <MomentJourneyCard
-          key="pathA-0"
-          moment={pathAMoments[0]}
-          currentIndex={0}
-          totalMoments={4}
-          onNext={handleNext}
-          showNextButton={true}
-          nextButtonText="3 Months Later →"
-        />
-      )}
+        {/* Scenarios Comparison */}
+        {step === "scenarios" && (
+          <motion.div
+            key="scenarios"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="px-6 py-12"
+          >
+            <div className="max-w-6xl mx-auto">
+              {/* Header */}
+              <div className="text-center mb-12">
+                <h2 className="text-3xl md:text-4xl font-[var(--font-playfair)] text-white mb-3">
+                  Three Ways Each Path Could Play Out
+                </h2>
+                <p className="text-gray-400">
+                  Best case, likely case, worst case — for both choices
+                </p>
+              </div>
 
-      {step === "pathA-1" && (
-        <MomentJourneyCard
-          key="pathA-1"
-          moment={pathAMoments[1]}
-          currentIndex={1}
-          totalMoments={4}
-          onNext={handleNext}
-          showNextButton={true}
-          nextButtonText="1 Year Later →"
-        />
-      )}
+              {/* Side by side scenarios */}
+              <div className="grid md:grid-cols-2 gap-6 mb-12">
+                <ScenarioViewer 
+                  path={simulations.pathA} 
+                  pathColor="green"
+                />
+                <ScenarioViewer 
+                  path={simulations.pathB} 
+                  pathColor="blue"
+                />
+              </div>
 
-      {step === "pathA-2" && (
-        <MomentJourneyCard
-          key="pathA-2"
-          moment={pathAMoments[2]}
-          currentIndex={2}
-          totalMoments={4}
-          onNext={handleNext}
-          showNextButton={true}
-          nextButtonText="3 Years Later →"
-        />
-      )}
+              {/* Continue button */}
+              <div className="text-center">
+                <button
+                  onClick={() => handleNext("tradeoffs")}
+                  className="btn-mystical text-lg px-10 py-4"
+                >
+                  See What You&apos;re Really Trading →
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
-      {step === "pathA-3" && (
-        <MomentJourneyCard
-          key="pathA-3"
-          moment={pathAMoments[3]}
-          currentIndex={3}
-          totalMoments={4}
-          onNext={handleNext}
-          showNextButton={true}
-          nextButtonText="See the Other Path →"
-        />
-      )}
+        {/* Tradeoff Analysis */}
+        {step === "tradeoffs" && (
+          <motion.div
+            key="tradeoffs"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="px-6 py-12"
+          >
+            <TradeoffAnalysis
+              goTradeoffs={simulations.pathA.tradeoffs}
+              stayTradeoffs={simulations.pathB.tradeoffs}
+            />
 
-      {step === "transition" && (
-        <PathTransition key="transition" onContinue={handleNext} />
-      )}
+            {/* Continue to flashcards */}
+            <div className="text-center mt-12">
+              <button
+                onClick={() => handleNext("flashcards")}
+                className="btn-mystical text-lg px-10 py-4"
+              >
+                Continue to Regret Visions →
+              </button>
+            </div>
+          </motion.div>
+        )}
 
-      {step === "pathB-0" && (
-        <MomentJourneyCard
-          key="pathB-0"
-          moment={pathBMoments[0]}
-          currentIndex={0}
-          totalMoments={4}
-          onNext={handleNext}
-          showNextButton={true}
-          nextButtonText="3 Months Later →"
-        />
-      )}
-
-      {step === "pathB-1" && (
-        <MomentJourneyCard
-          key="pathB-1"
-          moment={pathBMoments[1]}
-          currentIndex={1}
-          totalMoments={4}
-          onNext={handleNext}
-          showNextButton={true}
-          nextButtonText="1 Year Later →"
-        />
-      )}
-
-      {step === "pathB-2" && (
-        <MomentJourneyCard
-          key="pathB-2"
-          moment={pathBMoments[2]}
-          currentIndex={2}
-          totalMoments={4}
-          onNext={handleNext}
-          showNextButton={true}
-          nextButtonText="3 Years Later →"
-        />
-      )}
-
-      {step === "pathB-3" && (
-        <MomentJourneyCard
-          key="pathB-3"
-          moment={pathBMoments[3]}
-          currentIndex={3}
-          totalMoments={4}
-          onNext={handleNext}
-          showNextButton={true}
-          nextButtonText="Compare Both Paths →"
-        />
-      )}
-
-      {step === "comparison" && (
-        <ComparisonScreen
-          key="comparison"
-          pathA={simulations.pathA}
-          pathB={simulations.pathB}
-          onContinue={handleNext}
-        />
-      )}
-
-      {step === "flashcards" && (
-        <FlashcardViewer
-          key="flashcards"
-          flashcards={flashcards}
-          onComplete={onContinue}
-        />
-      )}
-    </AnimatePresence>
+        {/* Flashcards */}
+        {step === "flashcards" && (
+          <FlashcardViewer
+            key="flashcards"
+            flashcards={flashcards}
+            onComplete={onContinue}
+          />
+        )}
+      </AnimatePresence>
+    </div>
   )
 }

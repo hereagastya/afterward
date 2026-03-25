@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { gemini } from '@/lib/gemini';
-import { QuestionAnswer, DualPathSimulationData, FlashcardSet, TimelinePhase } from '@/lib/types';
+import { QuestionAnswer, FlashcardSet } from '@/lib/types';
 import { z } from 'zod';
 
 const RequestSchema = z.object({
@@ -11,16 +11,8 @@ const RequestSchema = z.object({
     order: z.number()
   })),
   simulations: z.object({
-    pathA: z.object({
-      pathType: z.string(),
-      pathTitle: z.string(),
-      phases: z.array(z.any())
-    }),
-    pathB: z.object({
-      pathType: z.string(),
-      pathTitle: z.string(),
-      phases: z.array(z.any())
-    })
+    pathA: z.any(),
+    pathB: z.any()
   })
 });
 
@@ -67,26 +59,39 @@ Rules:
 function formatContextForPrompt(
   decision: string, 
   answers: QuestionAnswer[], 
-  simulations: DualPathSimulationData
+  simulations: any
 ): string {
   const answersText = answers.map((a, i) => `Q${i + 1}: ${a.question}\nA: ${a.answer}`).join('\n\n');
   
-  // Safe cast for phases as they come from simplified Zod schema
-  const goPhases = (simulations.pathA.phases as TimelinePhase[]).map(p => 
-    `${p.title}: ${p.feeling}\n${p.shortSummary}`
-  ).join('\n\n');
-  
-  const stayPhases = (simulations.pathB.phases as TimelinePhase[]).map(p => 
-    `${p.title}: ${p.feeling}\n${p.shortSummary}`
-  ).join('\n\n');
+  // Support both old (phases) and new (baseCase.moments) shapes
+  let goSummary = '';
+  let staySummary = '';
+
+  if (simulations.pathA.baseCase?.moments) {
+    // New multi-scenario format
+    goSummary = simulations.pathA.baseCase.moments.map((m: any) => 
+      `${m.title}: ${m.feeling}\n${m.description}`
+    ).join('\n\n');
+    staySummary = simulations.pathB.baseCase.moments.map((m: any) => 
+      `${m.title}: ${m.feeling}\n${m.description}`
+    ).join('\n\n');
+  } else if (simulations.pathA.phases) {
+    // Legacy format
+    goSummary = simulations.pathA.phases.map((p: any) => 
+      `${p.title}: ${p.feeling}\n${p.shortSummary}`
+    ).join('\n\n');
+    staySummary = simulations.pathB.phases.map((p: any) => 
+      `${p.title}: ${p.feeling}\n${p.shortSummary}`
+    ).join('\n\n');
+  }
   
   return `Decision: "${decision}"
 \nUser's answers:
 ${answersText}
 \nPath A (Go) simulation summary:
-${goPhases}
+${goSummary}
 \nPath B (Stay) simulation summary:
-${stayPhases}`;
+${staySummary}`;
 }
 
 export async function POST(req: Request) {
@@ -160,7 +165,7 @@ export async function POST(req: Request) {
       };
     } else {
       try {
-        const context = formatContextForPrompt(decision, answers, simulations as DualPathSimulationData);
+        const context = formatContextForPrompt(decision, answers, simulations);
         const prompt = `${SYSTEM_PROMPT}\n\nContext:\n${context}`;
         
         const geminiResult = await gemini.generateContent(prompt);

@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server';
 import { gemini } from '@/lib/gemini';
-import { QuestionAnswer, DualPathSimulationData } from '@/lib/types';
+import { QuestionAnswer, DualPathSimulation } from '@/lib/types';
 import { z } from 'zod';
-import { auth, currentUser } from '@clerk/nextjs/server';
+import { auth } from '@clerk/nextjs/server';
 import { checkRateLimit, incrementDecisionCount } from '@/lib/rate-limit';
-import { prisma } from '@/lib/db';
 
 const RequestSchema = z.object({
   decision: z.string().min(2).max(500),
@@ -15,44 +14,68 @@ const RequestSchema = z.object({
   }))
 });
 
-const SYSTEM_PROMPT = `Generate a dual-path timeline simulation.
+const SYSTEM_PROMPT = `Generate a realistic dual-path simulation with multiple scenarios.
 
-CRITICAL: Keep ALL text extremely short and punchy.
+CRITICAL: Keep each scenario CONCISE. 2-3 sentences per moment MAX.
 
-For each timeline moment:
-- title: Maximum 5 words
-- emoji: A single emoji representing the dominant vibe
-- timeLabel: "Now", "3 months", "1 year", "3 years"
-- feeling: One word (e.g. "dread", "hope", "regret") (lowercased)
-- shortSummary: EXACTLY 3 short sentences (max 7 words each)
-- details: 2-3 bullet points (max 10 words each)
+For EACH path (GO and STAY), generate 3 scenarios:
 
-Example moment:
-{
-  "title": "The Leap",
-  "emoji": "🚀",  
-  "timeLabel": "Now",
-  "feeling": "terror",
-  "shortSummary": "You quit today. Heart racing. No safety net.",
-  "details": [
-    "Handed in resignation this morning",
-    "Savings cover 6 months max"
-  ]
-}
+1. BASE CASE (60% likely): Most realistic outcome
+2. UPSIDE (20% likely): If things go better than expected  
+3. DOWNSIDE (20% likely): If things go worse than expected
 
-NO long paragraphs. Keep it cinematic and punchy.
+For each scenario, show 3 timeline moments only:
+- 3 MONTHS
+- 1 YEAR
+- 3 YEARS
 
-Return a JSON object with this exact structure:
+Each moment needs:
+- title: 3-5 words max
+- description: 2-3 sentences, brutally honest
+- feeling: one word (e.g. "relieved", "anxious", "regretful")
+
+After scenarios, analyze tradeoffs on 5 dimensions (score from -5 to +5):
+- Money/Financial stability
+- Stress/Anxiety levels
+- Sleep quality (literal 3am thoughts)
+- Personal growth
+- Regret risk
+
+Be HONEST. Don't sugarcoat. Show real emotional and practical costs.
+
+Return JSON:
 {
   "pathA": {
-    "pathType": "go",
-    "pathTitle": "If You Go",
-    "phases": [ ... ]
+    "label": "If You GO",
+    "baseCase": {
+      "probability": "60%",
+      "moments": [
+        {
+          "timeLabel": "3 Months",
+          "title": "The Grind Begins",
+          "description": "Savings dwindling. First client flaked. Doubt creeping in.",
+          "feeling": "anxious"
+        },
+        { "timeLabel": "1 Year", "title": "...", "description": "...", "feeling": "..." },
+        { "timeLabel": "3 Years", "title": "...", "description": "...", "feeling": "..." }
+      ]
+    },
+    "upside": { "probability": "20%", "moments": [ ... ] },
+    "downside": { "probability": "20%", "moments": [ ... ] },
+    "tradeoffs": {
+      "money": { "score": -2, "summary": "40% pay cut year one, break-even year two" },
+      "stress": { "score": -3, "summary": "..." },
+      "sleep": { "score": -2, "summary": "..." },
+      "growth": { "score": 4, "summary": "..." },
+      "regretRisk": { "score": 1, "summary": "..." }
+    }
   },
   "pathB": {
-    "pathType": "stay",
-    "pathTitle": "If You Stay",
-    "phases": [ ... ]
+    "label": "If You STAY",
+    "baseCase": { ... },
+    "upside": { ... },
+    "downside": { ... },
+    "tradeoffs": { ... }
   }
 }
 
@@ -97,88 +120,78 @@ export async function POST(req: Request) {
       );
     }
 
-
-
-    let simulations: DualPathSimulationData;
+    let simulations: DualPathSimulation;
 
     // Mock fallback if no API key
     if (!process.env.GOOGLE_API_KEY || process.env.GOOGLE_API_KEY === "your_api_key_here") {
       simulations = {
         pathA: {
-          pathType: "go",
-          pathTitle: "If You Go",
-          phases: [
-            {
-              title: "The Plunge",
-              emoji: "🌊",
-              timeLabel: "Now",
-              feeling: "shock and awe",
-              shortSummary: "The water is colder than you thought. You gasp, but you're swimming.",
-              details: ["Deleting the old apps from your phone", "That first awkward dinner conversation"]
-            },
-            {
-              title: "The Grind",
-              emoji: "🧗",
-              timeLabel: "3 months",
-              feeling: "exhausted determination",
-              shortSummary: "The novelty has worn off. Now it's just work. You miss your old comfort zone.",
-              details: ["Checking your bank account nervously", "Questioning if you have what it takes"]
-            },
-            {
-              title: "The Breakthrough",
-              emoji: "💡",
-              timeLabel: "1 year",
-              feeling: "steady competence",
-              shortSummary: "You aren't the new person anymore. You have scars, but you have skills.",
-              details: ["Teaching someone else how to do it", "Sleeping soundly for the first time"]
-            },
-            {
-              title: "The Transformation",
-              emoji: "🦋",
-              timeLabel: "3 years",
-              feeling: "integrated wholeness",
-              shortSummary: "You can't imagine fitting into your old life. It feels like a skin you shed.",
-              details: ["Laughing at your old fears", "Planning the next big leap"]
-            }
-          ]
+          label: "If You GO",
+          baseCase: {
+            probability: "60%",
+            moments: [
+              { timeLabel: "3 Months", title: "The Grind Begins", description: "Savings dwindling. First client flaked. Doubt creeping in hard.", feeling: "anxious" },
+              { timeLabel: "1 Year", title: "Finding Your Feet", description: "Revenue is inconsistent but growing. You've learned more in 12 months than 5 years at the old job.", feeling: "determined" },
+              { timeLabel: "3 Years", title: "The New Normal", description: "You can't imagine going back. The income finally matches what you left behind.", feeling: "proud" }
+            ]
+          },
+          upside: {
+            probability: "20%",
+            moments: [
+              { timeLabel: "3 Months", title: "Early Traction", description: "A lucky break lands you a big client. Momentum feels real for the first time.", feeling: "excited" },
+              { timeLabel: "1 Year", title: "Scaling Fast", description: "You're hiring help and turning away work. The bet paid off sooner than expected.", feeling: "thriving" },
+              { timeLabel: "3 Years", title: "Industry Leader", description: "You're the person people come to. Financial freedom and creative control.", feeling: "fulfilled" }
+            ]
+          },
+          downside: {
+            probability: "20%",
+            moments: [
+              { timeLabel: "3 Months", title: "The Freefall", description: "No clients, no income. Emergency fund evaporating. Partner getting nervous.", feeling: "terrified" },
+              { timeLabel: "1 Year", title: "Crawling Back", description: "Had to take a worse job than what you left. Ego bruised. Lesson expensive.", feeling: "humiliated" },
+              { timeLabel: "3 Years", title: "The Scar", description: "Financially recovered but the failure haunts you. You play it safe now.", feeling: "regretful" }
+            ]
+          },
+          tradeoffs: {
+            money: { score: -2, summary: "40% pay cut year one, break-even year two" },
+            stress: { score: -3, summary: "Constant uncertainty, no safety net" },
+            sleep: { score: -2, summary: "3am anxiety about making rent" },
+            growth: { score: 4, summary: "Massive personal and professional growth" },
+            regretRisk: { score: 1, summary: "Low regret—at least you tried" }
+          }
         },
         pathB: {
-          pathType: "stay",
-          pathTitle: "If You Stay",
-          phases: [
-            {
-              title: "The Relief",
-              emoji: "🛋️",
-              timeLabel: "Now",
-              feeling: "safe but heavy",
-              shortSummary: "You close the door on the opportunity. It's safe here. Warm.",
-              details: ["Ordering the usual take-out", "Ignoring the nagging voice in your head"]
-            },
-            {
-              title: "The Itch",
-              emoji: "🐜",
-              timeLabel: "3 months",
-              feeling: "restless irritation",
-              shortSummary: "Everything is fine. Just fine. Why does that make you want to scream?",
-              details: ["Snapping at a coworker for no reason", "Doomscrolling until 2am"]
-            },
-            {
-              title: "The Resignation",
-              emoji: "😐",
-              timeLabel: "1 year",
-              feeling: "numb acceptance",
-              shortSummary: "You've convinced yourself it was for the best. The dream feels childish now.",
-              details: ["Deleting the bookmark folder", "Focusing entirely on the weekend"]
-            },
-            {
-              title: "The Hollow",
-              emoji: "🕳️",
-              timeLabel: "3 years",
-              feeling: "quiet regret",
-              shortSummary: "You see someone else take that leap. You feel a pang in your chest that doesn't go away.",
-              details: ["Wondering 'what if' during your commute", "Feeling older than you are"]
-            }
-          ]
+          label: "If You STAY",
+          baseCase: {
+            probability: "60%",
+            moments: [
+              { timeLabel: "3 Months", title: "Same Old Routine", description: "Nothing changed. The relief of not quitting fades into familiar numbness.", feeling: "numb" },
+              { timeLabel: "1 Year", title: "Golden Handcuffs", description: "Got a raise. Now it's even harder to leave. The dream feels further away.", feeling: "trapped" },
+              { timeLabel: "3 Years", title: "The Quiet Ache", description: "Comfortable but hollow. You watch others take the leap you didn't.", feeling: "wistful" }
+            ]
+          },
+          upside: {
+            probability: "20%",
+            moments: [
+              { timeLabel: "3 Months", title: "Unexpected Pivot", description: "New project lands on your desk. It's actually interesting for once.", feeling: "surprised" },
+              { timeLabel: "1 Year", title: "Internal Rise", description: "Promoted. More money, more autonomy. Maybe this path wasn't so bad.", feeling: "satisfied" },
+              { timeLabel: "3 Years", title: "Rewritten Story", description: "You found meaning without the dramatic leap. Stability has its own rewards.", feeling: "content" }
+            ]
+          },
+          downside: {
+            probability: "20%",
+            moments: [
+              { timeLabel: "3 Months", title: "The Layoff", description: "They let you go anyway. You stayed for safety and got neither.", feeling: "shocked" },
+              { timeLabel: "1 Year", title: "Starting Over", description: "Job market is brutal. You're competing with people 10 years younger.", feeling: "desperate" },
+              { timeLabel: "3 Years", title: "Bitter Wisdom", description: "You should have left on your own terms. Now the story wrote itself.", feeling: "bitter" }
+            ]
+          },
+          tradeoffs: {
+            money: { score: 3, summary: "Steady paycheck, benefits, annual raises" },
+            stress: { score: 1, summary: "Predictable stress, manageable anxiety" },
+            sleep: { score: 2, summary: "Sleep fine, but morning dread is real" },
+            growth: { score: -3, summary: "Skills plateauing, resume stagnating" },
+            regretRisk: { score: -4, summary: "High regret—the 'what if' never goes away" }
+          }
         }
       };
     } else {
@@ -199,10 +212,10 @@ export async function POST(req: Request) {
           jsonString = jsonMatch[1].trim();
         }
 
-        simulations = JSON.parse(jsonString) as DualPathSimulationData;
+        simulations = JSON.parse(jsonString) as DualPathSimulation;
         
         // Validate structure
-        if (!simulations.pathA || !simulations.pathB || !simulations.pathA.phases || simulations.pathA.phases.length < 3) {
+        if (!simulations.pathA || !simulations.pathB || !simulations.pathA.baseCase || !simulations.pathA.tradeoffs) {
           throw new Error("Invalid simulation format");
         }
       } catch (geminiError: unknown) {
@@ -224,4 +237,3 @@ export async function POST(req: Request) {
     );
   }
 }
-

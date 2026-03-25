@@ -50,6 +50,46 @@ export interface DualPathSimulationData {
   pathB: TimelineSimulation  // "If You Stay"
 }
 
+// ─── Multi-Scenario Simulation Types ────────────────────────────────────────
+
+export interface SimulationMoment {
+  timeLabel: string
+  title: string
+  description: string
+  feeling: string
+}
+
+export interface Scenario {
+  probability: string
+  moments: SimulationMoment[]
+}
+
+export interface Tradeoff {
+  score: number // -5 to +5
+  summary: string
+}
+
+export interface Tradeoffs {
+  money: Tradeoff
+  stress: Tradeoff
+  sleep: Tradeoff
+  growth: Tradeoff
+  regretRisk: Tradeoff
+}
+
+export interface PathSimulation {
+  label: string
+  baseCase: Scenario
+  upside: Scenario
+  downside: Scenario
+  tradeoffs: Tradeoffs
+}
+
+export interface DualPathSimulation {
+  pathA: PathSimulation
+  pathB: PathSimulation
+}
+
 export interface FlashcardData {
   content: string 
   pathType: "go" | "stay"

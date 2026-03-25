@@ -17,7 +17,7 @@ import { ReplayOptInModal } from "@/components/replay-opt-in-modal"
 import { 
   FlowState, 
   QuestionAnswer, 
-  DualPathSimulationData, 
+  DualPathSimulation, 
   FlashcardSet,
   UserChoice,
   AnalysisResult
@@ -86,7 +86,7 @@ export default function Home() {
   const [flowState, setFlowState] = useState<FlowState>("input")
   const [decision, setDecision] = useState("")
   const [answers, setAnswers] = useState<QuestionAnswer[]>([])
-  const [simulations, setSimulations] = useState<DualPathSimulationData | null>(null)
+  const [simulations, setSimulations] = useState<DualPathSimulation | null>(null)
   const [flashcards, setFlashcards] = useState<FlashcardSet | null>(null)
   const [userChoice, setUserChoice] = useState<UserChoice | null>(null)
   const [error, setError] = useState("")
