@@ -11,7 +11,7 @@ import { LimitPopup } from "@/components/limit-popup"
 import { Navbar } from "@/components/navbar"
 import { UpgradeModal } from "@/components/upgrade-modal"
 import { ConfidenceMeter } from "@/components/confidence-meter"
-import { PredictionResult } from "@/components/prediction-result"
+
 import { analyzeAnswers } from "@/lib/analyze-answers"
 import { ReplayOptInModal } from "@/components/replay-opt-in-modal"
 import { 
@@ -97,7 +97,7 @@ export default function Home() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [showReplayOptIn, setShowReplayOptIn] = useState(false)
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null)
-  const [showPredictionResult, setShowPredictionResult] = useState(false)
+
   const [isAnalyzing, setIsAnalyzing] = useState(false)
 
   // Hero textarea ref
@@ -259,10 +259,7 @@ export default function Home() {
   const handleDecision = async (choice: UserChoice) => {
     setUserChoice(choice)
 
-    // Check if prediction was correct
-    if (analysis && (choice === 'go' || choice === 'stay')) {
-      setShowPredictionResult(true)
-    }
+
 
     if (isSignedIn && simulations && flashcards) {
       try {
@@ -317,7 +314,7 @@ export default function Home() {
     setFlashcards(null)
     setUserChoice(null)
     setAnalysis(null)
-    setShowPredictionResult(false)
+
     setError("")
     setSavedDecisionId(null)
     setShowFeedback(false)
@@ -1005,6 +1002,7 @@ export default function Home() {
                 userChoice={userChoice}
                 onStartNew={handleReset}
                 onViewDashboard={() => router.push("/dashboard")}
+                analysis={analysis}
               />
             </motion.div>
           )}
@@ -1041,15 +1039,7 @@ export default function Home() {
         userChoice={userChoice || 'go'}
       />
 
-      {/* Prediction Result Popup */}
-      {showPredictionResult && analysis && userChoice && userChoice !== 'undecided' && (
-        <PredictionResult
-          wasCorrect={analysis.prediction === userChoice}
-          prediction={analysis.prediction}
-          actualChoice={userChoice}
-          reasoning={analysis.reasoning}
-        />
-      )}
+
     </main>
     </>
   )

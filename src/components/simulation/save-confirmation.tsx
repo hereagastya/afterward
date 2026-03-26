@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
-import { UserChoice } from "@/lib/types"
+import { UserChoice, AnalysisResult } from "@/lib/types"
 import { CheckCircle2, LayoutDashboard, RotateCcw } from "lucide-react"
 
 interface SaveConfirmationProps {
@@ -10,13 +10,15 @@ interface SaveConfirmationProps {
   userChoice: UserChoice
   onStartNew: () => void
   onViewDashboard?: () => void
+  analysis?: AnalysisResult | null
 }
 
 export function SaveConfirmation({ 
   decision, 
   userChoice, 
   onStartNew,
-  onViewDashboard 
+  onViewDashboard,
+  analysis
 }: SaveConfirmationProps) {
   const choiceLabels: Record<UserChoice, string> = {
     go: "Going for it",
@@ -29,6 +31,9 @@ export function SaveConfirmation({
     stay: "from-gray-600 to-gray-500",
     undecided: "from-amber-600 to-amber-500"
   }
+
+  const showPrediction = analysis && userChoice !== 'undecided'
+  const predictionCorrect = analysis?.prediction === userChoice
 
   return (
     <div className="w-full max-w-xl mx-auto space-y-10">
@@ -85,6 +90,42 @@ export function SaveConfirmation({
         </div>
       </motion.div>
 
+      {/* Prediction Insight (integrated, not a floating popup) */}
+      {showPrediction && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.55 }}
+          className={`rounded-2xl p-5 border ${
+            predictionCorrect
+              ? 'border-green-500/30 bg-green-500/5'
+              : 'border-purple-500/30 bg-purple-500/5'
+          }`}
+        >
+          <div className="flex items-start gap-4">
+            <span className="text-3xl mt-0.5">
+              {predictionCorrect ? '🎯' : '🤔'}
+            </span>
+            <div>
+              <h4 className="text-white font-semibold text-sm mb-1">
+                {predictionCorrect ? 'We called it!' : 'Interesting choice'}
+              </h4>
+              <p className="text-gray-400 text-sm">
+                {predictionCorrect
+                  ? `We predicted you'd choose ${analysis.prediction.toUpperCase()} — and you did.`
+                  : `We predicted ${analysis.prediction.toUpperCase()}, but you went with ${userChoice.toUpperCase()}.`
+                }
+              </p>
+              {analysis.reasoning && (
+                <p className="text-gray-500 text-xs mt-2 italic">
+                  &ldquo;{analysis.reasoning}&rdquo;
+                </p>
+              )}
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* Future Check-in Teaser */}
       <motion.div
         initial={{ opacity: 0 }}
@@ -93,7 +134,7 @@ export function SaveConfirmation({
         className="text-center p-4 rounded-xl bg-[#8B6FD4]/10 border border-[#8B6FD4]/20"
       >
         <p className="text-[#B794F4] text-sm">
-          ✨ We'll check in with you in 2 weeks to see how it's going
+          ✨ We&apos;ll check in with you in 2 weeks to see how it&apos;s going
         </p>
       </motion.div>
 

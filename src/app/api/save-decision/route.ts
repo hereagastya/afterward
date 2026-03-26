@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/db';
 
-import { QuestionAnswer, DualPathSimulationData, FlashcardSet, UserChoice } from '@/lib/types';
+import { QuestionAnswer, FlashcardSet, UserChoice } from '@/lib/types';
 import { z } from 'zod';
 
 // We can relax the validation here since we trust the generation API somewhat, 
@@ -15,16 +15,8 @@ const RequestSchema = z.object({
     order: z.number()
   })),
   simulations: z.object({
-    pathA: z.object({
-      pathType: z.string(),
-      pathTitle: z.string(),
-      phases: z.array(z.any())
-    }),
-    pathB: z.object({
-      pathType: z.string(),
-      pathTitle: z.string(),
-      phases: z.array(z.any())
-    })
+    pathA: z.any(),
+    pathB: z.any()
   }),
   flashcards: z.object({
     goFlashcards: z.array(z.any()),
@@ -91,11 +83,11 @@ export async function POST(req: Request) {
           create: [
             {
               pathType: "go",
-              phases: simulations.pathA.phases // Saved as JSON
+              phases: simulations.pathA as any // Saved as JSON (supports both old and new format)
             },
             {
               pathType: "stay",
-              phases: simulations.pathB.phases // Saved as JSON
+              phases: simulations.pathB as any // Saved as JSON (supports both old and new format)
             }
           ]
         },
