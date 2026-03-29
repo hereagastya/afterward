@@ -14,6 +14,7 @@ interface QuestionCardProps {
 
 export function QuestionCard({ question, onAnswer, isLast, index, total }: QuestionCardProps) {
   const [answer, setAnswer] = useState("")
+  const [isOther, setIsOther] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   // Clean the question text (remove markdown asterisks)
@@ -21,6 +22,7 @@ export function QuestionCard({ question, onAnswer, isLast, index, total }: Quest
 
   // Reset state when question changes
   useEffect(() => {
+    setIsOther(false)
     if (question.type === "scale") {
       setAnswer("5") // default for scale
     } else {
@@ -109,20 +111,47 @@ export function QuestionCard({ question, onAnswer, isLast, index, total }: Quest
 
               {/* Multiple choice */}
               {question.type === "multiple_choice" && question.options && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {question.options.map((option, optIndex) => (
-                    <button
-                      key={optIndex}
-                      onClick={() => setAnswer(option)}
-                      className={`p-4 rounded-xl border transition-all text-left ${
-                        answer === option
-                          ? 'border-purple-500 bg-purple-500/20 text-white shadow-[0_0_15px_rgba(168,85,247,0.3)]'
-                          : 'border-purple-500/30 bg-black/40 text-gray-300 hover:border-purple-500/50'
-                      }`}
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {[...question.options, "Other..."].map((option, optIndex) => (
+                      <button
+                        key={optIndex}
+                        onClick={() => {
+                          if (option === "Other...") {
+                            setAnswer("")
+                            setIsOther(true)
+                          } else {
+                            setAnswer(option)
+                            setIsOther(false)
+                          }
+                        }}
+                        className={`p-4 rounded-xl border transition-all text-left ${
+                          (answer === option && !isOther) || (option === "Other..." && isOther)
+                            ? 'border-purple-500 bg-purple-500/20 text-white shadow-[0_0_15px_rgba(168,85,247,0.3)]'
+                            : 'border-purple-500/30 bg-black/40 text-gray-300 hover:border-purple-500/50'
+                        }`}
+                      >
+                        {option}
+                      </button>
+                    ))}
+                  </div>
+                  {isOther && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      className="mt-4"
                     >
-                      {option}
-                    </button>
-                  ))}
+                      <textarea
+                        ref={textareaRef}
+                        value={answer}
+                        onChange={(e) => setAnswer(e.target.value)}
+                        placeholder="Please specify..."
+                        className="w-full p-4 bg-black/40 border border-purple-500/30 rounded-xl text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none resize-none min-h-[100px]"
+                        rows={3}
+                        autoFocus
+                      />
+                    </motion.div>
+                  )}
                 </div>
               )}
             </div>
@@ -131,11 +160,11 @@ export function QuestionCard({ question, onAnswer, isLast, index, total }: Quest
             <div className="mt-8">
               <button
                 onClick={() => {
-                  if (answer) {
+                  if (answer.trim()) {
                     onSubmit()
                   }
                 }}
-                disabled={!answer}
+                disabled={!answer.trim()}
                 className="btn-holo w-full"
               >
                 {isLast ? 'Generate Simulation →' : 'Next Question →'}

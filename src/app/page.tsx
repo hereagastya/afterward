@@ -245,8 +245,8 @@ export default function Home() {
       // Now go to journey with both simulations AND flashcards ready
       setFlowState("simulation")
     } catch (err: any) {
-      console.error(err)
-      setError(err.message || "Failed to generate simulations")
+      console.error("Simulation generation error:", err)
+      setError(err.message || "The oracle is silent. Failed to generate your futures. Please try again.")
       // Revert to analysis so they don't lose their context and can retry
       setFlowState("analysis")
     }
@@ -412,6 +412,29 @@ export default function Home() {
         }}
       />
     <main className="min-h-screen bg-[var(--bg-base)] relative overflow-x-hidden">
+      {/* Global Error Banner */}
+      <AnimatePresence>
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -50 }}
+            className="fixed top-24 left-1/2 -translate-x-1/2 z-[100] w-[calc(100%-2rem)] max-w-md"
+          >
+            <div className="bg-red-500/10 border border-red-500/50 backdrop-blur-md rounded-xl p-4 flex items-center justify-between shadow-2xl">
+              <p className="text-red-200 text-sm font-medium pr-4">{error}</p>
+              <button 
+                onClick={() => setError("")}
+                className="text-red-400 hover:text-red-200 transition-colors"
+                aria-label="Close error"
+              >
+                ✕
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {flowState === "input" && <Navbar />}
 
       <div className="relative w-full">

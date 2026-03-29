@@ -50,7 +50,13 @@ export function analyzeAnswers(answers: QuestionAnswer[], decision: string): Ana
     // Catastrophizing
     if (text.includes('always') || text.includes('never') || 
         text.includes('worst') || text.includes('everything will')) {
-      redFlags.push("Catastrophizing outcomes")
+      const variants = [
+        "Catastrophizing outcomes",
+        "Binary/Extreme thinking detected",
+        "Projecting worst-case scenarios",
+        "Emotional forecasting bias"
+      ]
+      redFlags.push(variants[Math.floor(Math.random() * variants.length)])
     }
     
     // Fear of judgment
@@ -58,28 +64,59 @@ export function analyzeAnswers(answers: QuestionAnswer[], decision: string): Ana
         text.includes('what would they') ||
         text.includes('people will say') ||
         text.includes('judged')) {
-      redFlags.push("Afraid of judgment")
+      const variants = [
+        "Afraid of judgment",
+        "External perception bias",
+        "Social approval seeking",
+        "Prioritizing others' opinions"
+      ]
+      redFlags.push(variants[Math.floor(Math.random() * variants.length)])
     }
     
     // Surface-level thinking
     if (wordCount < 15) {
-      redFlags.push("Surface-level thinking")
+      const variants = [
+        "Surface-level thinking",
+        "Glancing off the surface",
+        "Safe/Shallow reflection",
+        "Avoidance of depth detected",
+        "Holding back emotional truth"
+      ]
+      redFlags.push(variants[Math.floor(Math.random() * variants.length)])
     }
     
     // Analysis paralysis
     if (wordCount > 250) {
-      redFlags.push("Overthinking/Analysis paralysis")
+      const variants = [
+        "Overthinking/Analysis paralysis",
+        "Getting lost in the details",
+        "Intellectualizing the fear",
+        "Excessive cognitive load"
+      ]
+      redFlags.push(variants[Math.floor(Math.random() * variants.length)])
     }
 
     // Hedging language
     if ((text.match(/maybe|perhaps|possibly|might|could/g) || []).length > 2) {
-      redFlags.push("Excessive hedging - lacking conviction")
+      const variants = [
+        "Excessive hedging - lacking conviction",
+        "Tentative language detected",
+        "Subconscious exit routes found",
+        "Softening the decision impact"
+      ]
+      redFlags.push(variants[Math.floor(Math.random() * variants.length)])
     }
 
     // Contradictions
     if ((text.includes('but') || text.includes('however')) && 
         (text.includes('want') || text.includes('need'))) {
-      redFlags.push("Internal contradiction detected")
+      const variants = [
+        "Internal contradiction detected",
+        "Conflicting desires found",
+        "Self-correction loop active",
+        "The 'But' wall reached"
+      ]
+      redFlags.push(variants[Math.floor(Math.random() * variants.length)])
     }
   })
 
