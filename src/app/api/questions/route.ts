@@ -12,7 +12,7 @@ const SYSTEM_PROMPT = `You are a decision clarity coach. Given a life decision, 
 Your goal is to get to the emotional core and practical reality of the decision.
 
 Generate a mix of these question types:
-- "multiple_choice" (2-3 questions): Use this for categorical factors (e.g., primary driver, time pressure, emotional state). Provide 4-5 short, punchy options.
+- "multiple_choice" (2-3 questions): Use this for categorical factors (e.g., primary driver, time pressure, emotional state). Provide exactly 3 short, punchy, and distinct options.
 - "text" (1-2 questions): Use this for specific fears or scenarios.
 - "scale" (1 question): Use this for gut feeling or confidence (1-10).
 
@@ -21,7 +21,7 @@ Return a JSON array with this structure:
   {
     "question": "What's the main emotion driving this decision?",
     "type": "multiple_choice",
-    "options": ["Fear of missing out", "Boredom", "Financial pressure", "Excitement", "Anxiety"]
+    "options": ["Fear of missing out", "Financial pressure", "Excitement"]
   },
   {
     "question": "What is the worst-case scenario if you do this?",
@@ -59,7 +59,7 @@ export async function POST(req: Request) {
         {
           question: "What is the primary driver for this decision?",
           type: "multiple_choice",
-          options: ["Financial Freedom", "Passion/Purpose", "Escaping current situation", "External Pressure", "Curiosity"]
+          options: ["Financial Freedom", "Passion/Purpose", "External Pressure"]
         },
         {
           question: "What is your biggest fear about saying YES?",
@@ -72,7 +72,7 @@ export async function POST(req: Request) {
         {
           question: "What would you regret more in 10 years?",
           type: "multiple_choice",
-          options: ["Doing it and failing", "Never trying at all", "Burning bridges", "Losing money"]
+          options: ["Doing it and failing", "Never trying at all", "Losing money"]
         }
       ];
     } else {
@@ -92,9 +92,9 @@ RULES:
 
 EXAMPLES OF GOOD SHORT QUESTIONS:
 
-Multiple choice (with 4 options):
-- "What scares you most?" [Failing, Regret, Judgment, Financial loss]
-- "Who gets hurt if this fails?" [You, Family, Partner, Career]
+Multiple choice (with exactly 3 options):
+- "What scares you most?" [Failing, Regret, Financial loss]
+- "Who gets hurt if this fails?" [You, Family, Career]
 
 Text (short answer):
 - "Worst case scenario in one sentence:"
@@ -113,7 +113,7 @@ Return JSON:
       "id": "q1",
       "type": "multiple_choice" | "text" | "scale",
       "question": "Short question text",
-      "options": ["opt1", "opt2", "opt3", "opt4"] // only for multiple_choice
+      "options": ["opt1", "opt2", "opt3"] // only for multiple_choice, EXACTLY 3
     }
   ]
 }`
