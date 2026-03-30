@@ -90,6 +90,27 @@ function formatAnswersForPrompt(answers: QuestionAnswer[]): string {
   return answers.map((a, i) => `Q${i + 1}: ${a.question}\nA: ${a.answer}`).join('\n\n');
 }
 
+function normalizeTradeoffs(tradeoffs: any): any {
+  const dimensions = ['money', 'stress', 'sleep', 'growth', 'regretRisk'];
+  const normalized: any = {};
+  
+  dimensions.forEach(dim => {
+    if (tradeoffs && tradeoffs[dim]) {
+      normalized[dim] = {
+        score: typeof tradeoffs[dim].score === 'number' ? tradeoffs[dim].score : 0,
+        summary: tradeoffs[dim].summary || "No specific details provided."
+      };
+    } else {
+      normalized[dim] = {
+        score: 0,
+        summary: "No data provided."
+      };
+    }
+  });
+  
+  return normalized;
+}
+
 export async function POST(req: Request) {
   try {
     const { userId } = await auth();
@@ -213,6 +234,14 @@ export async function POST(req: Request) {
         }
 
         simulations = JSON.parse(jsonString) as DualPathSimulation;
+        
+        // Normalize tradeoffs to prevent frontend crashes
+        if (simulations.pathA) {
+          simulations.pathA.tradeoffs = normalizeTradeoffs(simulations.pathA.tradeoffs);
+        }
+        if (simulations.pathB) {
+          simulations.pathB.tradeoffs = normalizeTradeoffs(simulations.pathB.tradeoffs);
+        }
         
         // Validate structure
         if (!simulations.pathA || !simulations.pathB || !simulations.pathA.baseCase || !simulations.pathA.tradeoffs) {

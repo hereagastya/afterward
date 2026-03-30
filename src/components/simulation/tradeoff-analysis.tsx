@@ -58,10 +58,13 @@ export function TradeoffAnalysis({ goTradeoffs, stayTradeoffs }: TradeoffAnalysi
 
       <div className="space-y-8">
         {dimensions.map((dim, i) => {
-          const goScore = goTradeoffs[dim.key].score
-          const stayScore = stayTradeoffs[dim.key].score
-          const goSummary = goTradeoffs[dim.key].summary
-          const staySummary = stayTradeoffs[dim.key].summary
+          const goTradeoff = goTradeoffs?.[dim.key] || { score: 0, summary: "No data provided" }
+          const stayTradeoff = stayTradeoffs?.[dim.key] || { score: 0, summary: "No data provided" }
+          
+          const goScore = goTradeoff.score ?? 0
+          const stayScore = stayTradeoff.score ?? 0
+          const goSummary = goTradeoff.summary || "No data provided"
+          const staySummary = stayTradeoff.summary || "No data provided"
 
           return (
             <motion.div
