@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion"
 import { X, Lock, Zap } from "lucide-react"
+import Link from "next/link"
 
 interface LimitPopupProps {
   isOpen: boolean
@@ -59,9 +60,12 @@ export function LimitPopup({ isOpen, onClose }: LimitPopupProps) {
                   You have reached your limit of 1 decision per day and 3 decisions per month.
                 </p>
                 <div className="pt-2">
-                   <p className="text-[var(--text-muted)] text-xs uppercase tracking-widest font-[var(--font-dm-mono)]">
-                    Paid plans coming soon
-                   </p>
+                    <Link 
+                      href="/pricing"
+                      className="text-[var(--text-muted)] hover:text-[#9d7de8] transition-colors text-xs uppercase tracking-widest font-[var(--font-dm-mono)] underline underline-offset-4"
+                    >
+                      Pricing plans
+                    </Link>
                 </div>
               </div>
 
