@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Playfair_Display, DM_Sans, DM_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
+import { Analytics } from "@vercel/analytics/next";
 
 import "./globals.css";
 
@@ -113,6 +114,7 @@ export default function RootLayout({
       <html lang="en" className="dark">
         <body className={`${playfair.variable} ${dmSans.variable} ${dmMono.variable} font-[var(--font-dm-sans)] bg-background text-foreground antialiased min-h-screen selection:bg-[#7c5cbf]/30 selection:text-white`}>
           {children}
+          <Analytics />
         </body>
       </html>
     </ClerkProvider>
