@@ -56,7 +56,7 @@ export function LimitPopup({ isOpen, onClose }: LimitPopupProps) {
                   Decision Limit Reached
                 </h3>
                 <p className="text-[var(--text-secondary)] text-sm leading-relaxed max-w-[280px] mx-auto">
-                  You have reached your daily limit of 2 decisions.
+                  You have reached your limit of 1 decision per day and 3 decisions per month.
                 </p>
                 <div className="pt-2">
                    <p className="text-[var(--text-muted)] text-xs uppercase tracking-widest font-[var(--font-dm-mono)]">

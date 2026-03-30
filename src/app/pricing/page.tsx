@@ -75,7 +75,7 @@ export default function PricingPage() {
 
             <ul className="space-y-4 mb-10">
               {[
-                  "3 decisions per month",
+                  "1 decision per day / 3 per month",
                   "Basic timeline simulation",
                   "Save decisions for later"
               ].map(feature => (

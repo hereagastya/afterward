@@ -189,17 +189,38 @@ export default function Home() {
     setFlowState("questions")
   }
 
-  const handleQuestionsComplete = (completedAnswers: QuestionAnswer[]) => {
+  const handleQuestionsComplete = async (completedAnswers: QuestionAnswer[]) => {
     setAnswers(completedAnswers)
     setIsAnalyzing(true)
     setFlowState("analysis")
     
-    // Simulate deep AI analysis to build anticipation before showing meter
-    setTimeout(() => {
-      const analysisResult = analyzeAnswers(completedAnswers, decision)
-      setAnalysis(analysisResult)
-      setIsAnalyzing(false)
-    }, 2000)
+    try {
+      // Check limits before showing analysis
+      const limitRes = await fetch("/api/user/check-limit")
+      const limitData = await limitRes.json()
+
+      if (limitRes.ok && !limitData.allowed) {
+        // Show limit popup and reset
+        setShowLimitPopup(true)
+        handleReset()
+        return
+      }
+
+      // If allowed, simulate deep AI analysis to build anticipation before showing meter
+      setTimeout(() => {
+        const analysisResult = analyzeAnswers(completedAnswers, decision)
+        setAnalysis(analysisResult)
+        setIsAnalyzing(false)
+      }, 2000)
+    } catch (err) {
+      console.error("Limit check error:", err)
+      // If server error, proceed anyway but it might fail at simulation step
+      setTimeout(() => {
+        const analysisResult = analyzeAnswers(completedAnswers, decision)
+        setAnalysis(analysisResult)
+        setIsAnalyzing(false)
+      }, 2000)
+    }
   }
 
   const handleContinueFromAnalysis = async () => {
@@ -314,6 +335,7 @@ export default function Home() {
     setFlashcards(null)
     setUserChoice(null)
     setAnalysis(null)
+    setIsAnalyzing(false)
 
     setError("")
     setSavedDecisionId(null)

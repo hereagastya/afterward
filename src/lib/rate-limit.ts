@@ -7,14 +7,14 @@ export interface RateLimitResult {
   monthlyRemaining?: number
 }
 
-const DAILY_LIMIT = 2
-const MONTHLY_LIMIT = 10
+const DAILY_LIMIT = 1
+const MONTHLY_LIMIT = 3
 
 // Developer bypass
 const BYPASS_EMAILS = ['sharmaagastya72@gmail.com']
 
-export async function checkRateLimit(userId: string): Promise<RateLimitResult> {
-  const user = await prisma.user.findUnique({
+async function getOrCreateUser(userId: string) {
+  let user = await prisma.user.findUnique({
     where: { clerkId: userId },
     select: {
       email: true,
@@ -27,8 +27,34 @@ export async function checkRateLimit(userId: string): Promise<RateLimitResult> {
   })
 
   if (!user) {
-    throw new Error("User not found")
+    // If user doesn't exist, create them
+    const newUser = await prisma.user.create({
+      data: {
+        clerkId: userId,
+        email: `${userId}@placeholder.com`, // We'll update this if they save a decision with real email
+        isPro: false,
+        dailyDecisionCount: 0,
+        monthlyDecisionCount: 0,
+        lastDailyReset: new Date(),
+        lastMonthlyReset: new Date(),
+      }
+    })
+    
+    return {
+      email: newUser.email,
+      isPro: newUser.isPro,
+      dailyDecisionCount: newUser.dailyDecisionCount,
+      monthlyDecisionCount: newUser.monthlyDecisionCount,
+      lastDailyReset: newUser.lastDailyReset,
+      lastMonthlyReset: newUser.lastMonthlyReset,
+    }
   }
+
+  return user
+}
+
+export async function checkRateLimit(userId: string): Promise<RateLimitResult> {
+  const user = await getOrCreateUser(userId)
 
   // Bypass for Pro users and developer
   if (user.isPro || BYPASS_EMAILS.includes(user.email)) {
@@ -79,21 +105,7 @@ export async function checkRateLimit(userId: string): Promise<RateLimitResult> {
 }
 
 export async function incrementDecisionCount(userId: string): Promise<void> {
-  const user = await prisma.user.findUnique({
-    where: { clerkId: userId },
-    select: {
-      email: true,
-      isPro: true,
-      dailyDecisionCount: true,
-      monthlyDecisionCount: true,
-      lastDailyReset: true,
-      lastMonthlyReset: true
-    }
-  })
-
-  if (!user) {
-    throw new Error("User not found")
-  }
+  const user = await getOrCreateUser(userId)
 
   // Don't increment for Pro users or developer
   if (user.isPro || BYPASS_EMAILS.includes(user.email)) {
