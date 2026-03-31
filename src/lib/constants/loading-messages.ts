@@ -22,10 +22,3 @@ export const simulationLoadingMessages = [
   "Teaching AI to worry like you do...",
   "Stress-testing your gut feeling...",
 ]
-
-export const flashcardLoadingMessages = [
-  "Gathering your regrets...",
-  "Collecting what keeps you up at night...",
-  "Finding the skeletons...",
-  "Identifying future 3am thoughts..."
-]

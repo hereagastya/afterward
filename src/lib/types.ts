@@ -90,20 +90,7 @@ export interface DualPathSimulation {
   pathB: PathSimulation
 }
 
-export interface FlashcardData {
-  content: string 
-  pathType: "go" | "stay"
-  category: "financial" | "relationships" | "emotional" | "time" | "identity" | "general"
-  likelihood: "high" | "medium" | "low"
-  emojiBefore: string
-  emojiAfter: string
-  _id?: number // For internal UI keys
-}
 
-export interface FlashcardSet {
-  goFlashcards: FlashcardData[]
-  stayFlashcards: FlashcardData[]
-}
 
 export interface AnalysisResult {
   clarityScore: number
@@ -123,7 +110,6 @@ export type FlowState =
   | "analysis"       // Confidence Meter visualization
   | "simulating"     // Loading simulation
   | "simulation"     // Two-path display
-  | "flashcards"     // Regret flashcards
   | "decision"       // Final prompt
   | "saved"          // Confirmation
 
@@ -135,6 +121,5 @@ export interface DecisionFlowData {
   questions: GeneratedQuestion[]
   answers: QuestionAnswer[]
   simulations?: DualPathSimulationData
-  flashcards?: FlashcardSet
   userChoice?: UserChoice
 }

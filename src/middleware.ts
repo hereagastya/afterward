@@ -10,8 +10,7 @@ const isPublicRoute = createRouteMatcher([
   "/api/webhooks/paddle",
   "/api/webhooks/dodo",
   "/api/questions",
-  "/api/simulate-paths",
-  "/api/flashcards"
+  "/api/simulate-paths"
 ]);
 
 

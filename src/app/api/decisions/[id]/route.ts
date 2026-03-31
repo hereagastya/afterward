@@ -24,7 +24,6 @@ export async function GET(
       },
       include: {
         simulations: true,
-        flashcards: true,
         questionAnswers: {
             orderBy: { order: 'asc' }
         },

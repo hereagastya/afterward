@@ -6,20 +6,17 @@ import { DualPathSimulation } from "@/lib/types"
 import { JourneyLanding } from "./journey-landing"
 import { ScenarioViewer } from "./scenario-viewer"
 import { TradeoffAnalysis } from "./tradeoff-analysis"
-import { FlashcardViewer } from "./flashcard-viewer"
 import { useSound } from "@/lib/hooks/use-sound"
 
 interface SimulationOutputProps {
   simulations: DualPathSimulation
-  flashcards: any
   onContinue: () => void
 }
 
-type Step = "landing" | "scenarios" | "tradeoffs" | "flashcards"
+type Step = "landing" | "scenarios" | "tradeoffs"
 
 export function SimulationOutput({
   simulations,
-  flashcards,
   onContinue
 }: SimulationOutputProps) {
   const [step, setStep] = useState<Step>("landing")
@@ -100,25 +97,16 @@ export function SimulationOutput({
               stayTradeoffs={simulations.pathB.tradeoffs}
             />
 
-            {/* Continue to flashcards */}
+            {/* Continue to decision */}
             <div className="text-center mt-12">
               <button
-                onClick={() => handleNext("flashcards")}
+                onClick={onContinue}
                 className="btn-mystical text-lg px-10 py-4"
               >
-                Continue to Regret Visions →
+                Continue to Final Decision →
               </button>
             </div>
           </motion.div>
-        )}
-
-        {/* Flashcards */}
-        {step === "flashcards" && (
-          <FlashcardViewer
-            key="flashcards"
-            flashcards={flashcards}
-            onComplete={onContinue}
-          />
         )}
       </AnimatePresence>
     </div>

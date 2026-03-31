@@ -17,7 +17,6 @@ interface DecisionDetail {
   status: string
   createdAt: string
   simulations: any[]
-  flashcards: any[]
   checkIns: any[]
 }
 
@@ -201,10 +200,10 @@ export default function DecisionDetailPage({ params }: { params: Promise<{ id: s
               className="space-y-12"
             >
                {/* Placeholder for future detailed simulation view */}
-               <div className="p-12 border border-dashed border-white/10 rounded-3xl text-center bg-white/[0.02]">
+                <div className="p-12 border border-dashed border-white/10 rounded-3xl text-center bg-white/[0.02]">
                   <h3 className="text-2xl font-[var(--font-playfair)] text-white mb-4">Original Data Archived</h3>
                   <p className="text-gray-500 max-w-md mx-auto">
-                    The detailed simulation pathway and flashcards are archived. We're building a new viewer for this data.
+                    The detailed simulation pathway is archived. We're building a new viewer for this data.
                   </p>
                   <span className="inline-block mt-6 px-4 py-1.5 bg-[var(--bg-elevated)] rounded-full text-xs font-mono text-[var(--accent-glow)] border border-[var(--border-subtle)]">
                       COMING SOON

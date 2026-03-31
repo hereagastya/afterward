@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/db';
 
-import { QuestionAnswer, FlashcardSet, UserChoice } from '@/lib/types';
+import { QuestionAnswer, UserChoice } from '@/lib/types';
 import { z } from 'zod';
 
 // We can relax the validation here since we trust the generation API somewhat, 
@@ -17,10 +17,6 @@ const RequestSchema = z.object({
   simulations: z.object({
     pathA: z.any(),
     pathB: z.any()
-  }),
-  flashcards: z.object({
-    goFlashcards: z.array(z.any()),
-    stayFlashcards: z.array(z.any())
   }),
   userChoice: z.enum(["go", "stay", "undecided"]),
   analysis: z.any().optional() // Make analysis optional to avoid breaking existing requests
@@ -46,7 +42,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid input" }, { status: 400 });
     }
 
-    const { decision, answers, simulations, flashcards, userChoice, analysis } = result.data;
+    const { decision, answers, simulations, userChoice, analysis } = result.data;
 
     // Find or create user
     let dbUser = await prisma.user.findUnique({ where: { clerkId: userId } });
@@ -91,25 +87,10 @@ export async function POST(req: Request) {
             }
           ]
         },
-        flashcards: {
-          create: [
-            ...flashcards.goFlashcards.map((card, i) => ({
-              pathType: "go",
-              data: card, // Saved as JSON
-              order: i + 1
-            })),
-            ...flashcards.stayFlashcards.map((card, i) => ({
-              pathType: "stay",
-              data: card, // Saved as JSON
-              order: i + 1
-            }))
-          ]
-        }
       },
       include: {
         questionAnswers: true,
-        simulations: true,
-        flashcards: true
+        simulations: true
       }
     });
 

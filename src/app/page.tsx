@@ -18,7 +18,6 @@ import {
   FlowState, 
   QuestionAnswer, 
   DualPathSimulation, 
-  FlashcardSet,
   UserChoice,
   AnalysisResult
 } from "@/lib/types"
@@ -87,7 +86,6 @@ export default function Home() {
   const [decision, setDecision] = useState("")
   const [answers, setAnswers] = useState<QuestionAnswer[]>([])
   const [simulations, setSimulations] = useState<DualPathSimulation | null>(null)
-  const [flashcards, setFlashcards] = useState<FlashcardSet | null>(null)
   const [userChoice, setUserChoice] = useState<UserChoice | null>(null)
   const [error, setError] = useState("")
   const [messageIndex, setMessageIndex] = useState(0)
@@ -248,22 +246,7 @@ export default function Home() {
       const simData = await simRes.json()
       setSimulations(simData)
 
-      // 2. Generate flashcards
-      const flashRes = await fetch("/api/flashcards", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ decision, answers, simulations: simData }),
-      })
-
-      if (!flashRes.ok) {
-        const errorData = await flashRes.json().catch(() => ({}))
-        throw new Error(errorData.error || "Failed to generate flashcards")
-      }
-
-      const flashData = await flashRes.json()
-      setFlashcards(flashData)
-
-      // Now go to journey with both simulations AND flashcards ready
+      // Now go to journey with simulations ready
       setFlowState("simulation")
     } catch (err: any) {
       console.error("Simulation generation error:", err)
@@ -282,7 +265,7 @@ export default function Home() {
 
 
 
-    if (isSignedIn && simulations && flashcards) {
+    if (isSignedIn && simulations) {
       try {
         const res = await fetch("/api/save-decision", {
           method: "POST",
@@ -291,7 +274,6 @@ export default function Home() {
             decision,
             answers,
             simulations,
-            flashcards,
             userChoice: choice,
             analysis
           }),
@@ -332,7 +314,6 @@ export default function Home() {
     setDecision("")
     setAnswers([])
     setSimulations(null)
-    setFlashcards(null)
     setUserChoice(null)
     setAnalysis(null)
     setIsAnalyzing(false)
@@ -998,7 +979,7 @@ export default function Home() {
           )}
 
           {/* ═══════════════ SIMULATION STATE (NEW JOURNEY) ═══════════════ */}
-          {flowState === "simulation" && simulations && flashcards && (
+          {flowState === "simulation" && simulations && (
             <motion.div
               key="simulation"
               initial={{ opacity: 0 }}
@@ -1009,7 +990,6 @@ export default function Home() {
             >
               <SimulationOutput
                 simulations={simulations}
-                flashcards={flashcards}
                 onContinue={handleJourneyComplete}
               />
             </motion.div>

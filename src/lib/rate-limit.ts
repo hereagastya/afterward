@@ -7,8 +7,8 @@ export interface RateLimitResult {
   monthlyRemaining?: number
 }
 
-const DAILY_LIMIT = 1
-const MONTHLY_LIMIT = 3
+const DAILY_LIMIT = 2
+const MONTHLY_LIMIT = 10
 
 // Developer bypass
 const BYPASS_EMAILS = ['sharmaagastya72@gmail.com']
