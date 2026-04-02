@@ -532,9 +532,7 @@ export default function Home() {
                     transition={{ delay: 0.55, duration: 0.6 }}
                     className="text-[var(--text-secondary)] text-lg md:text-xl max-w-xl mx-auto leading-relaxed mb-12"
                   >
-                    Logic lies. Emotion doesn&apos;t.
-                    <br className="hidden sm:block" />
-                    Experience the future consequences of your choice before you make it.
+                    Type your decision. We simulate both futures. You choose without regret.
                   </motion.p>
 
                   {/* Textarea + Button */}
@@ -563,7 +561,7 @@ export default function Home() {
                       disabled={!decision.trim()}
                       className="shimmer-btn mt-4 w-full py-4 rounded-xl bg-gradient-to-r from-[#7c5cbf] to-[#9d7de8] text-white font-bold tracking-[0.2em] text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-[0_0_60px_rgba(124,92,191,0.5)] hover:scale-[1.02] transition-all duration-300 cursor-pointer"
                     >
-                      SIMULATE REGRET
+                      See Both Futures
                     </button>
 
                     {error && (
@@ -820,23 +818,6 @@ export default function Home() {
                       Try Your Decision →
                     </button>
                   </div>
-                </div>
-              </section>
-
-              {/* ─── SOCIAL PROOF STRIP ────────────────────────────────────── */}
-              <section className="scroll-reveal py-16 px-6">
-                <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-[var(--text-muted)] font-[var(--font-dm-mono)] text-sm tracking-wide">
-                  <span>
-                    <strong className="text-[var(--text-secondary)]">2,847</strong> decisions simulated
-                  </span>
-                  <span className="hidden sm:inline text-[var(--text-muted)]">·</span>
-                  <span>
-                    <strong className="text-[var(--text-secondary)]">1,203</strong> regrets avoided
-                  </span>
-                  <span className="hidden sm:inline text-[var(--text-muted)]">·</span>
-                  <span>
-                    <strong className="text-[var(--text-secondary)]">4,912</strong> paths explored
-                  </span>
                 </div>
               </section>
 
