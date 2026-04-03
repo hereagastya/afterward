@@ -77,46 +77,110 @@ export async function POST(req: Request) {
       ];
     } else {
       try {
-        const questionCount = 4 + Math.floor(Math.random() * 2) // 4 or 5 questions randomly
-
-        const prompt = `Generate ${questionCount} SHORT, DIRECT questions about this decision.
+        const prompt = `You are a brutally honest therapist, not a supportive friend. Generate 5 UNCOMFORTABLE questions that will reveal what this person already knows but won't admit.
 
 Decision: "${decision}"
 
+PHILOSOPHY:
+- Good therapy costs $150/hour because it makes you confront uncomfortable truths
+- Your questions should do that in 5 minutes
+- Don't ask what they think - ask what they're avoiding
+- Don't be supportive - be confrontational (but not cruel)
+- Surface the REAL reason, not the story they tell themselves
+
+QUESTION ARCHETYPES:
+
+1. PERMISSION-SEEKING DETECTOR
+Bad: "What do you hope will happen?"
+Good: "Are you asking for advice, or hoping someone gives you permission to do what you've already decided?"
+
+2. SELF-DECEPTION REVEALER
+Bad: "What concerns you?"
+Good: "What story are you telling yourself about this that you know isn't completely true?"
+
+3. FUTURE REGRET PROVOKER
+Bad: "What might go wrong?"
+Good: "It's 5 years from now and you chose wrong. What's the specific moment where you realized it?"
+
+4. SOCIAL PRESSURE IDENTIFIER
+Bad: "How do others feel about this?"
+Good: "If nobody would ever know what you chose, would you still be asking this question?"
+
+5. COMMITMENT TESTER
+Bad: "How certain are you?"
+Good: "What would have to happen for you to completely change your mind about this tomorrow?"
+
+6. FEAR VS WISDOM SEPARATOR
+Bad: "What scares you?"
+Good: "Which of your fears are protecting you, and which are just keeping you small?"
+
+7. HIDDEN MOTIVATION EXCAVATOR
+Bad: "Why do you want this?"
+Good: "What will this decision prove about you that you're trying to prove?"
+
+8. RELATIONSHIP MIRROR
+Bad: "What would your family think?"
+Good: "If your best friend made this exact decision with your exact reasoning, what would you tell them?"
+
+9. COST REVEALER
+Bad: "What might you lose?"
+Good: "What's the price of being wrong that you haven't said out loud yet?"
+
+10. TIME-PRESSURE IDENTIFIER
+Bad: "When do you need to decide?"
+Good: "What are you afraid will happen if you wait another month to decide this?"
+
 RULES:
-1. Keep questions under 15 words - be brutally concise
-2. Mix types: multiple_choice, text, scale
-3. NO markdown formatting (*bold*, _italic_) - plain text only
-4. Make questions uncomfortable and direct
-5. Each question reveals something different
+- Generate EXACTLY 5 questions
+- Mix types: 3 text (open-ended), 1 multiple_choice (4 options that are all uncomfortable), 1 scale (1-10)
+- Each question must be under 25 words
+- NO generic therapy-speak ("How does that make you feel?")
+- NO supportive language ("What would make you happy?")
+- NO markdown formatting (*bold*, _italic_) - plain text only
+- Each question should make them pause and think "...shit, that's a good question"
+- Questions should build on the decision context (use specific words from their decision)
 
-EXAMPLES OF GOOD SHORT QUESTIONS:
-
-Multiple choice (with exactly 3 options):
-- "What scares you most?" [Failing, Regret, Financial loss]
-- "Who gets hurt if this fails?" [You, Family, Career]
-
-Text (short answer):
-- "Worst case scenario in one sentence:"
-- "What's the real reason you're hesitating?"
-
-Scale (1-10):
-- "Fear vs logic driving this? (1=fear, 10=logic)"
-- "How certain are you? (1=doubt, 10=sure)"
-
-Generate ${questionCount} questions. Keep them SHORT and DIRECT.
+MULTIPLE CHOICE FORMAT (if used):
+Don't ask "What scares you?" with options like "Failure, Success, Unknown, Money"
+Instead ask "What's really stopping you?" with options like:
+- "I'm scared, but I'm calling it 'being realistic'"
+- "I want someone else to make this choice for me"
+- "I'm waiting for a sign that will never come"
+- "I already decided, I just want validation"
 
 Return JSON:
 {
   "questions": [
     {
       "id": "q1",
-      "type": "multiple_choice" | "text" | "scale",
-      "question": "Short question text",
-      "options": ["opt1", "opt2", "opt3"] // only for multiple_choice, EXACTLY 3
+      "type": "text",
+      "question": "Your confrontational question here"
+    },
+    {
+      "id": "q2",
+      "type": "multiple_choice",
+      "question": "Your confrontational question here",
+      "options": ["Uncomfortable option 1", "Uncomfortable option 2", "Uncomfortable option 3", "Uncomfortable option 4"]
+    },
+    {
+      "id": "q3",
+      "type": "text",
+      "question": "Your confrontational question here"
+    },
+    {
+      "id": "q4",
+      "type": "scale",
+      "question": "Your confrontational scale question (1=one extreme, 10=other)"
+    },
+    {
+      "id": "q5",
+      "type": "text",
+      "question": "Your confrontational question here"
     }
   ]
-}`
+}
+
+Generate questions that will make them screenshot this and send it to their therapist.`
         const geminiResult = await gemini.generateContent(prompt);
         const response = await geminiResult.response;
         const content = response.text();

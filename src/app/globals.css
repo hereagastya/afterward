@@ -380,3 +380,19 @@
   border-color: rgba(157, 125, 232, 0.6);
   box-shadow: 0 0 40px rgba(124, 92, 191, 0.15);
 }
+
+/* 3D perspective for book flipping */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+/* Smooth page transitions */
+@keyframes pageFlip {
+  from {
+    transform: rotateY(0deg);
+  }
+  to {
+    transform: rotateY(180deg);
+  }
+}
+

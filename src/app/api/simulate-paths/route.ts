@@ -14,60 +14,120 @@ const RequestSchema = z.object({
   }))
 });
 
-const SYSTEM_PROMPT = `Generate a realistic dual-path simulation with multiple scenarios.
+function formatAnswersForPrompt(decision: string, answers: QuestionAnswer[]): string {
+  return `You are writing a psychological thriller about a REAL PERSON'S future, not a business case study.
 
-CRITICAL: Keep each scenario CONCISE. 2-3 sentences per moment MAX.
+Decision: "${decision}"
 
-For EACH path (GO and STAY), generate 3 scenarios:
+Context from their answers:
+${answers.map((a, i) => `
+Q${i + 1}: ${a.question}
+A${i + 1}: ${a.answer}
+`).join('\n')}
 
-1. BASE CASE (60% likely): Most realistic outcome
-2. UPSIDE (20% likely): If things go better than expected  
-3. DOWNSIDE (20% likely): If things go worse than expected
+CRITICAL WRITING RULES:
 
-For each scenario, show 3 timeline moments only:
-- 3 MONTHS
-- 1 YEAR
-- 3 YEARS
+1. USE THEIR EXACT WORDS
+- If they said "terrified" - use "terrified", not "concerned"
+- If they mentioned "my 3 year old daughter" - reference her specifically
+- If they said "burnt out" - don't say "experiencing fatigue"
+- Mirror their language intensity
 
-Each moment needs:
-- title: 3-5 words max
-- description: 2-3 sentences, brutally honest
-- feeling: one word (e.g. "relieved", "anxious", "regretful")
+2. SHOW, DON'T TELL
+Bad: "You'll feel stressed about money"
+Good: "You check your bank balance three times before buying the $4 coffee. You get it anyway, but the guilt sits there."
 
-After scenarios, analyze tradeoffs on 5 dimensions (score from -5 to +5):
-- Money/Financial stability
-- Stress/Anxiety levels
-- Sleep quality (literal 3am thoughts)
-- Personal growth
-- Regret risk
+Bad: "The relationship will suffer"
+Good: "They're talking about their day and you realize you stopped listening two minutes ago. You nod anyway."
 
-Be HONEST. Don't sugarcoat. Show real emotional and practical costs.
+Bad: "You'll have regrets"
+Good: "You see their LinkedIn update and close the tab. You'll open it again in 20 minutes."
 
-Return JSON:
+3. INCLUDE MICRO-MOMENTS THAT REVEAL TRUTH
+- Specific times: "Tuesday at 3pm", "the Uber ride home", "right before you fall asleep"
+- Small behaviors: "refreshing your email", "laughing too loud at their joke", "taking the long way home"
+- Physical sensations: "your jaw is clenched", "you're holding your breath", "the coffee tastes like nothing"
+- What they notice: "the noise level", "how often you check the time", "that you used to love this"
+
+4. UNCOMFORTABLE SPECIFICITY
+Bad: "Financial pressure increases"
+Good: "The Venmo request from your roommate for utilities hits different now. You have the money. You just hate that you're counting it."
+
+Bad: "Work-life balance improves"
+Good: "You're reading to your kid and you're actually there. Not thinking about Slack. Not composing an email in your head. Just there."
+
+Bad: "Uncertainty causes stress"
+Good: "You're explaining your decision to someone at a party and you hear yourself say 'I think it'll work out' and you don't believe you."
+
+5. REVEAL THE HIDDEN COST/BENEFIT
+Every moment should include something they didn't expect:
+- In GO path: Show the hidden costs of freedom
+- In STAY path: Show the hidden costs of safety
+
+6. EMOTIONAL PRECISION
+Don't use generic emotions. Use the specific shade:
+- Not "sad" → "hollow"
+- Not "happy" → "quietly proud"
+- Not "anxious" → "wired and exhausted at the same time"
+- Not "regret" → "that specific ache of knowing you had the chance"
+
+STRUCTURE FOR EACH SCENARIO:
+
+Base Case (60% likely):
+- Most realistic outcome based on their actual constraints
+- Show the slow reveal of truth, not dramatic events
+- Include both what they expected AND what they didn't
+
+Upside (20% likely):
+- Things go better than planned
+- BUT still show the unexpected costs
+- Success has downsides they didn't predict
+
+Downside (20% likely):
+- Things go worse than planned
+- BUT don't make it catastrophic
+- Show the slow erosion, not the explosion
+
+EACH MOMENT NEEDS:
+- timeLabel: "3 Months", "1 Year", "3 Years"
+- title: 3-6 words, poetic but clear
+- description: 3-4 sentences, hyper-specific, uncomfortably accurate
+- feeling: ONE word emotion (the precise shade)
+
+NOW GENERATE:
+
+PathA (If You GO):
+- baseCase: 3 moments
+- upside: 3 moments
+- downside: 3 moments
+
+PathB (If You STAY):
+- baseCase: 3 moments
+- upside: 3 moments
+- downside: 3 moments
+
+Plus tradeoffs analysis on these dimensions (score -5 to +5 for each path):
+- money: Real financial impact with specific numbers if possible
+- stress: The specific type of stress (deadline stress vs existential stress)
+- sleep: Literal sleep quality and 3am thoughts
+- growth: What they're learning/becoming vs what they're losing
+- regretRisk: The specific regret they'll feel
+
+Each tradeoff needs a "summary" that's brutally honest, not corporate-speak.
+
+Return JSON matching this structure:
 {
   "pathA": {
     "label": "If You GO",
-    "baseCase": {
-      "probability": "60%",
-      "moments": [
-        {
-          "timeLabel": "3 Months",
-          "title": "The Grind Begins",
-          "description": "Savings dwindling. First client flaked. Doubt creeping in.",
-          "feeling": "anxious"
-        },
-        { "timeLabel": "1 Year", "title": "...", "description": "...", "feeling": "..." },
-        { "timeLabel": "3 Years", "title": "...", "description": "...", "feeling": "..." }
-      ]
-    },
-    "upside": { "probability": "20%", "moments": [ ... ] },
-    "downside": { "probability": "20%", "moments": [ ... ] },
+    "baseCase": { "probability": "60%", "moments": [{ "timeLabel": "3 Months", "title": "...", "description": "...", "feeling": "..." }, ...] },
+    "upside": { "probability": "20%", "moments": [...] },
+    "downside": { "probability": "20%", "moments": [...] },
     "tradeoffs": {
-      "money": { "score": -2, "summary": "40% pay cut year one, break-even year two" },
-      "stress": { "score": -3, "summary": "..." },
-      "sleep": { "score": -2, "summary": "..." },
-      "growth": { "score": 4, "summary": "..." },
-      "regretRisk": { "score": 1, "summary": "..." }
+      "money": { "score": 0, "summary": "..." },
+      "stress": { "score": 0, "summary": "..." },
+      "sleep": { "score": 0, "summary": "..." },
+      "growth": { "score": 0, "summary": "..." },
+      "regretRisk": { "score": 0, "summary": "..." }
     }
   },
   "pathB": {
@@ -79,15 +139,7 @@ Return JSON:
   }
 }
 
-Rules:
-- Be realistic, not idealistic.
-- Path A should show the struggle of change.
-- Path B should show the subtle decay of stagnation (or the comfort of safety, depending on context).
-- Use the user's answers to personalize details.
-- Return ONLY valid JSON.`;
-
-function formatAnswersForPrompt(answers: QuestionAnswer[]): string {
-  return answers.map((a, i) => `Q${i + 1}: ${a.question}\nA: ${a.answer}`).join('\n\n');
+Return ONLY valid JSON. Make this feel so personal they wonder if you've been watching them.`;
 }
 
 function normalizeTradeoffs(tradeoffs: any): any {
@@ -217,8 +269,7 @@ export async function POST(req: Request) {
       };
     } else {
       try {
-        const answersFormatted = formatAnswersForPrompt(answers);
-        const prompt = `${SYSTEM_PROMPT}\n\nDecision: "${decision}"\n\nUser's answers to probing questions:\n${answersFormatted}`;
+        const prompt = formatAnswersForPrompt(decision, answers);
         
         const geminiResult = await gemini.generateContent(prompt);
         const response = await geminiResult.response;
