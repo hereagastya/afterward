@@ -1,9 +1,9 @@
 "use client"
 
+import { useState } from "react"
 import { DualPathSimulation } from "@/lib/types"
 import { JourneyLanding } from "./journey-landing"
-import { BookViewer } from "./book-viewer"
-import { useState } from "react"
+import { MysticalBookViewer } from "./mystical-book-viewer"
 
 interface SimulationOutputProps {
   simulations: DualPathSimulation
@@ -14,14 +14,12 @@ export function SimulationOutput({ simulations, onContinue }: SimulationOutputPr
   const [showLanding, setShowLanding] = useState(true)
 
   if (showLanding) {
-    return (
-      <JourneyLanding onBegin={() => setShowLanding(false)} />
-    )
+    return <JourneyLanding onBegin={() => setShowLanding(false)} />
   }
 
   return (
-    <BookViewer 
-      simulations={simulations} 
+    <MysticalBookViewer 
+      simulations={simulations}
       onComplete={onContinue}
     />
   )
