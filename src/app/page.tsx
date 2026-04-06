@@ -204,20 +204,16 @@ export default function Home() {
         return
       }
 
-      // If allowed, simulate deep AI analysis to build anticipation before showing meter
-      setTimeout(() => {
-        const analysisResult = analyzeAnswers(completedAnswers, decision)
-        setAnalysis(analysisResult)
-        setIsAnalyzing(false)
-      }, 2000)
+      // Call Gemini-powered analysis
+      const analysisResult = await analyzeAnswers(completedAnswers, decision)
+      setAnalysis(analysisResult)
+      setIsAnalyzing(false)
     } catch (err) {
-      console.error("Limit check error:", err)
-      // If server error, proceed anyway but it might fail at simulation step
-      setTimeout(() => {
-        const analysisResult = analyzeAnswers(completedAnswers, decision)
-        setAnalysis(analysisResult)
-        setIsAnalyzing(false)
-      }, 2000)
+      console.error("Analysis error:", err)
+      // Fallback — analyzeAnswers has its own fallback too
+      const analysisResult = await analyzeAnswers(completedAnswers, decision)
+      setAnalysis(analysisResult)
+      setIsAnalyzing(false)
     }
   }
 

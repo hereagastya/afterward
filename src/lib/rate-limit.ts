@@ -54,12 +54,18 @@ async function getOrCreateUser(userId: string) {
 }
 
 export async function checkRateLimit(userId: string): Promise<RateLimitResult> {
-  const user = await getOrCreateUser(userId)
-
-  // Bypass for Pro users and developer
-  if (user.isPro || BYPASS_EMAILS.includes(user.email)) {
+  // === LOCAL DEV BYPASS: DB IS DOWN ===
+  if (process.env.NODE_ENV === 'development') {
     return { allowed: true }
   }
+
+  try {
+    const user = await getOrCreateUser(userId)
+
+    // Bypass for Pro users and developer
+    if (user.isPro || BYPASS_EMAILS.includes(user.email)) {
+      return { allowed: true }
+    }
 
   const now = new Date()
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
@@ -97,45 +103,59 @@ export async function checkRateLimit(userId: string): Promise<RateLimitResult> {
     }
   }
 
-  return {
-    allowed: true,
-    dailyRemaining: DAILY_LIMIT - dailyCount - 1,
-    monthlyRemaining: MONTHLY_LIMIT - monthlyCount - 1
+    return {
+      allowed: true,
+      dailyRemaining: DAILY_LIMIT - dailyCount - 1,
+      monthlyRemaining: MONTHLY_LIMIT - monthlyCount - 1
+    }
+  } catch (error) {
+    console.error("DB Error checking rate limit:", error)
+    // If DB fails, allow the request to pass through so the user isn't blocked by infrastructure issues.
+    return { allowed: true }
   }
 }
 
 export async function incrementDecisionCount(userId: string): Promise<void> {
-  const user = await getOrCreateUser(userId)
-
-  // Don't increment for Pro users or developer
-  if (user.isPro || BYPASS_EMAILS.includes(user.email)) {
+  // === LOCAL DEV BYPASS: DB IS DOWN ===
+  if (process.env.NODE_ENV === 'development') {
     return
   }
 
-  const now = new Date()
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+  try {
+    const user = await getOrCreateUser(userId)
 
-  let dailyCount = user.dailyDecisionCount
-  let monthlyCount = user.monthlyDecisionCount
-
-  // Reset counters if needed
-  if (!user.lastDailyReset || user.lastDailyReset < today) {
-    dailyCount = 0
-  }
-
-  if (!user.lastMonthlyReset || user.lastMonthlyReset < thisMonth) {
-    monthlyCount = 0
-  }
-
-  // Increment both counters
-  await prisma.user.update({
-    where: { clerkId: userId },
-    data: {
-      dailyDecisionCount: dailyCount + 1,
-      monthlyDecisionCount: monthlyCount + 1,
-      lastDailyReset: today,
-      lastMonthlyReset: thisMonth
+    // Don't increment for Pro users or developer
+    if (user.isPro || BYPASS_EMAILS.includes(user.email)) {
+      return
     }
-  })
+
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+
+    let dailyCount = user.dailyDecisionCount
+    let monthlyCount = user.monthlyDecisionCount
+
+    // Reset counters if needed
+    if (!user.lastDailyReset || user.lastDailyReset < today) {
+      dailyCount = 0
+    }
+
+    if (!user.lastMonthlyReset || user.lastMonthlyReset < thisMonth) {
+      monthlyCount = 0
+    }
+
+    // Increment both counters
+    await prisma.user.update({
+      where: { clerkId: userId },
+      data: {
+        dailyDecisionCount: dailyCount + 1,
+        monthlyDecisionCount: monthlyCount + 1,
+        lastDailyReset: today,
+        lastMonthlyReset: thisMonth
+      }
+    })
+  } catch (error) {
+    console.error("DB Error incrementing decision count:", error)
+  }
 }

@@ -61,9 +61,14 @@ export function ConfidenceMeter({ analysis, onContinue }: ConfidenceMeterProps) 
               <h2 className="text-3xl md:text-4xl font-[var(--font-playfair)] text-white mb-3">
                 Your Decision DNA 🧬
               </h2>
-              <p className="text-gray-400 max-w-md mx-auto">
-                We&apos;ve analyzed the emotional and logical weighting of your responses to reveal what&apos;s truly driving this choice.
-              </p>
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5 }}
+                className="text-purple-300 text-sm italic"
+              >
+                {emotionalState}
+              </motion.p>
             </motion.div>
           </div>
 
@@ -129,42 +134,35 @@ export function ConfidenceMeter({ analysis, onContinue }: ConfidenceMeterProps) 
                clarityScore > 40 ? "You're still figuring it out" :
                "You're very confused"}
             </motion.p>
-
-            <motion.p
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.1 }}
-              className="text-purple-400 text-sm mt-2"
-            >
-              {emotionalState}
-            </motion.p>
           </motion.div>
 
-          {/* Emotion Breakdown */}
+          {/* Emotion Breakdown — Three distinct forces */}
           <div className="space-y-5 mb-8">
+            
             {/* Fear */}
             <motion.div
               initial={{ x: -50, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 1.2 }}
+              transition={{ delay: 1.1 }}
             >
               <div className="flex justify-between items-center mb-2">
-                <span className="text-red-400 font-mono text-sm uppercase tracking-wider">
-                  Fear
+                <span className="font-semibold text-sm uppercase tracking-wider flex items-center gap-2">
+                  <span className="text-lg">🔥</span>
+                  <span className="text-red-400">Fear</span>
                 </span>
-                <span className="text-red-400 font-bold text-lg">{fearLevel}%</span>
+                <span className="text-red-400 font-bold text-xl tabular-nums">{fearLevel}%</span>
               </div>
-              <div className="h-4 bg-gray-900 rounded-full overflow-hidden relative">
+              <div className="h-5 bg-gray-900/80 rounded-full overflow-hidden relative border border-red-500/10">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${fearLevel}%` }}
-                  transition={{ duration: 1, delay: 1.3, ease: "easeOut" }}
-                  className="h-full bg-gradient-to-r from-red-600 via-orange-500 to-red-600 relative"
+                  transition={{ duration: 1.2, delay: 1.2, ease: "easeOut" }}
+                  className="h-full bg-gradient-to-r from-red-700 via-red-500 to-orange-500 relative rounded-full"
                 >
                   <motion.div
                     animate={{ x: ['-100%', '200%'] }}
                     transition={{ duration: 2, repeat: Infinity, ease: "linear", repeatDelay: 1 }}
-                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
+                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
                   />
                 </motion.div>
               </div>
@@ -174,122 +172,173 @@ export function ConfidenceMeter({ analysis, onContinue }: ConfidenceMeterProps) 
             <motion.div
               initial={{ x: -50, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 1.4 }}
+              transition={{ delay: 1.3 }}
             >
               <div className="flex justify-between items-center mb-2">
-                <span className="text-blue-400 font-mono text-sm uppercase tracking-wider">
-                  Logic
+                <span className="font-semibold text-sm uppercase tracking-wider flex items-center gap-2">
+                  <span className="text-lg">🧠</span>
+                  <span className="text-cyan-400">Logic</span>
                 </span>
-                <span className="text-blue-400 font-bold text-lg">{logicLevel}%</span>
+                <span className="text-cyan-400 font-bold text-xl tabular-nums">{logicLevel}%</span>
               </div>
-              <div className="h-4 bg-gray-900 rounded-full overflow-hidden relative">
+              <div className="h-5 bg-gray-900/80 rounded-full overflow-hidden relative border border-cyan-500/10">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${logicLevel}%` }}
-                  transition={{ duration: 1, delay: 1.5, ease: "easeOut" }}
-                  className="h-full bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-600 relative"
+                  transition={{ duration: 1.2, delay: 1.4, ease: "easeOut" }}
+                  className="h-full bg-gradient-to-r from-blue-700 via-cyan-500 to-teal-400 relative rounded-full"
                 >
                   <motion.div
                     animate={{ x: ['-100%', '200%'] }}
                     transition={{ duration: 2, repeat: Infinity, ease: "linear", repeatDelay: 1 }}
-                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
+                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
                   />
                 </motion.div>
               </div>
             </motion.div>
 
-            {/* Gut */}
+            {/* Gut Feeling */}
             <motion.div
               initial={{ x: -50, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 1.6 }}
+              transition={{ delay: 1.5 }}
             >
               <div className="flex justify-between items-center mb-2">
-                <span className="text-green-400 font-mono text-sm uppercase tracking-wider">
-                  Gut Feeling
+                <span className="font-semibold text-sm uppercase tracking-wider flex items-center gap-2">
+                  <span className="text-lg">💫</span>
+                  <span className="text-amber-400">Gut Feeling</span>
                 </span>
-                <span className="text-green-400 font-bold text-lg">{gutLevel}%</span>
+                <span className="text-amber-400 font-bold text-xl tabular-nums">{gutLevel}%</span>
               </div>
-              <div className="h-4 bg-gray-900 rounded-full overflow-hidden relative">
+              <div className="h-5 bg-gray-900/80 rounded-full overflow-hidden relative border border-amber-500/10">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${gutLevel}%` }}
-                  transition={{ duration: 1, delay: 1.7, ease: "easeOut" }}
-                  className="h-full bg-gradient-to-r from-green-600 via-emerald-500 to-green-600 relative"
+                  transition={{ duration: 1.2, delay: 1.6, ease: "easeOut" }}
+                  className="h-full bg-gradient-to-r from-amber-700 via-amber-500 to-yellow-400 relative rounded-full"
                 >
                   <motion.div
                     animate={{ x: ['-100%', '200%'] }}
                     transition={{ duration: 2, repeat: Infinity, ease: "linear", repeatDelay: 1 }}
-                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
+                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
                   />
                 </motion.div>
               </div>
             </motion.div>
+
+            {/* Sum indicator */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1.8 }}
+              className="text-right"
+            >
+              <span className="text-gray-600 text-xs font-mono">
+                = {fearLevel + logicLevel + gutLevel}%
+              </span>
+            </motion.div>
           </div>
 
-          {/* Red Flags */}
+          {/* Red Flags — Urgent, specific, personal */}
           {redFlags.length > 0 && (
             <motion.div
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 1.8 }}
-              className="bg-red-500/10 border border-red-500/30 rounded-xl p-5 mb-6"
+              transition={{ delay: 1.9 }}
+              className="mb-8"
             >
-              <h4 className="text-red-400 font-semibold mb-3 flex items-center gap-2 text-lg">
-                <span>⚠️</span> Red Flags Detected
-              </h4>
-              <ul className="space-y-2">
+              <div className="space-y-3">
                 {redFlags.map((flag: string, i: number) => (
-                  <motion.li
+                  <motion.div
                     key={i}
-                    initial={{ x: -10, opacity: 0 }}
+                    initial={{ x: -20, opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: 1.9 + (i * 0.1) }}
-                    className="text-gray-300 text-sm flex items-start gap-2"
+                    transition={{ delay: 2.0 + (i * 0.15) }}
+                    className="bg-red-500/8 border-l-4 border-red-500 rounded-r-lg p-4 relative overflow-hidden"
                   >
-                    <span className="text-red-500 mt-0.5">•</span>
-                    <span>{flag}</span>
-                  </motion.li>
+                    {/* Subtle pulse glow */}
+                    <motion.div
+                      animate={{ opacity: [0, 0.08, 0] }}
+                      transition={{ duration: 2, repeat: Infinity, delay: i * 0.5 }}
+                      className="absolute inset-0 bg-red-500"
+                    />
+                    <p className="text-gray-200 text-sm leading-relaxed relative z-10">
+                      {flag}
+                    </p>
+                  </motion.div>
                 ))}
-              </ul>
+              </div>
             </motion.div>
           )}
 
-          {/* Prediction Box */}
+          {/* Prediction Box — The gut punch */}
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 2 }}
-            className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/40 rounded-xl p-6 mb-6"
+            transition={{ delay: 2.3 }}
+            className="relative mb-6 overflow-hidden rounded-xl"
           >
-            <p className="text-gray-400 text-sm mb-3 text-center uppercase tracking-wider">
-              Our Prediction
-            </p>
-            <div className="text-center mb-3">
-              <p className="text-3xl font-bold text-white mb-1">
-                You'll choose: <span className="text-purple-400 uppercase">{prediction}</span>
+            {/* Background with animated border */}
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-900/40 to-black rounded-xl" />
+            <motion.div
+              animate={{
+                background: [
+                  'linear-gradient(0deg, rgba(124,58,237,0.3) 0%, transparent 50%)',
+                  'linear-gradient(180deg, rgba(124,58,237,0.3) 0%, transparent 50%)',
+                  'linear-gradient(360deg, rgba(124,58,237,0.3) 0%, transparent 50%)',
+                ]
+              }}
+              transition={{ duration: 4, repeat: Infinity }}
+              className="absolute inset-0 rounded-xl"
+            />
+            
+            <div className="relative z-10 p-8 text-center border border-purple-500/30 rounded-xl">
+              <p className="text-gray-500 text-xs mb-4 uppercase tracking-[0.3em]">
+                Our Prediction
               </p>
-              <p className="text-gray-400">
-                {predictionConfidence}% confidence
-              </p>
+              <motion.div
+                initial={{ scale: 0.8 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 2.5, type: "spring" }}
+              >
+                <p className="text-4xl md:text-5xl font-bold text-white mb-1 font-[var(--font-playfair)]">
+                  You&apos;ll {prediction === 'go' ? 'GO' : 'STAY'}
+                </p>
+                <div className="flex items-center justify-center gap-2 mb-4">
+                  <div className="h-1 w-12 bg-purple-500/30 rounded-full overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${predictionConfidence}%` }}
+                      transition={{ delay: 2.7, duration: 0.8 }}
+                      className="h-full bg-purple-500 rounded-full"
+                    />
+                  </div>
+                  <span className="text-purple-400 text-sm font-mono">{predictionConfidence}%</span>
+                </div>
+              </motion.div>
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 2.8 }}
+                className="text-gray-300 text-base italic leading-relaxed max-w-lg mx-auto"
+              >
+                &ldquo;{reasoning}&rdquo;
+              </motion.p>
             </div>
-            <p className="text-gray-300 text-sm text-center italic">
-              "{reasoning}"
-            </p>
           </motion.div>
 
           {/* Continue Button */}
           <motion.div
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 2.2 }}
+            transition={{ delay: 3 }}
             className="text-center"
           >
             <button
               onClick={onContinue}
               className="btn-mystical w-full text-lg py-4"
             >
-              Let's see if we're right →
+              Let&apos;s see if we&apos;re right →
             </button>
             <p className="text-gray-500 text-xs mt-3">
               Generating your timelines...
