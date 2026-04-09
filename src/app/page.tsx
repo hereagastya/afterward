@@ -544,11 +544,11 @@ export default function Home() {
                         className="oracle-textarea"
                         placeholder="e.g. Should I quit my job to start a bakery?"
                         value={decision}
-                        onChange={e => setDecision(e.target.value.slice(0, 300))}
+                        onChange={e => setDecision(e.target.value.slice(0, 1000))}
                         rows={4}
                       />
                       <span className="absolute bottom-3 right-4 text-[var(--text-muted)] text-xs font-[var(--font-dm-mono)]">
-                        {decision.length} / 300
+                        {decision.length} / 1000
                       </span>
                     </div>
 
@@ -604,7 +604,7 @@ export default function Home() {
                 </div>
               </section>
 
-              {/* ─── HOW IT WORKS ──────────────────────────────────────────── */}
+              {/* ─── HOW IT WORKS ────────────────────────────────────────────*/}
               <section className="relative py-24 px-6">
                 <div className="max-w-5xl mx-auto">
                   <div className="scroll-reveal text-center mb-16">

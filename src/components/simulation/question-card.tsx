@@ -71,9 +71,17 @@ export function QuestionCard({ question, onAnswer, isLast, index, total }: Quest
             </div>
             
             {/* Question text */}
-            <h2 className="text-2xl md:text-3xl font-[var(--font-playfair)] font-light text-white leading-relaxed mb-8">
+            <h2 className="text-2xl md:text-3xl font-[var(--font-playfair)] font-light text-white leading-relaxed mb-2">
               {cleanQuestion}
             </h2>
+            {/* Clarity hint */}
+            <p className="text-sm text-gray-500 italic mb-8">
+              {question.type === "text"
+                ? "Be honest and specific — say what you'd tell a close friend, not a stranger."
+                : question.type === "multiple_choice"
+                ? "Pick the one that stings a little. That's usually the real answer."
+                : "Go with your gut. Don't overthink the number."}
+            </p>
             
             {/* Input fields */}
             <div className="w-full">
