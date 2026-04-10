@@ -4,7 +4,7 @@ import { GeneratedQuestion } from '@/lib/types';
 import { z } from 'zod';
 
 const RequestSchema = z.object({
-  decision: z.string().min(5).max(500),
+  decision: z.string().min(5).max(1000),
 });
 
 const SYSTEM_PROMPT = `You are a decision clarity coach. Given a life decision, generate exactly 4-5 pointed, interactive questions to help the user gain clarity.
