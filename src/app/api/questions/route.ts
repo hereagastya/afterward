@@ -76,8 +76,7 @@ export async function POST(req: Request) {
         }
       ];
     } else {
-      try {
-        const prompt = `You are a brutally honest therapist, not a supportive friend. Generate 5 UNCOMFORTABLE questions that will reveal what this person already knows but won't admit.
+      const prompt = `You are a brutally honest therapist, not a supportive friend. Generate 5 UNCOMFORTABLE questions that will reveal what this person already knows but won't admit.
 
 Decision: "${decision}"
 
@@ -181,6 +180,8 @@ Return JSON:
 }
 
 Generate questions that will make them screenshot this and send it to their therapist.`
+
+      try {
         const geminiResult = await gemini.generateContent(prompt);
         const response = await geminiResult.response;
         const content = response.text();
@@ -202,8 +203,31 @@ Generate questions that will make them screenshot this and send it to their ther
           throw new Error("Invalid questions format");
         }
       } catch (geminiError: unknown) {
-        console.error("Gemini API Error:", geminiError);
-        throw geminiError;
+        console.error("Gemini API Error (attempt 1), retrying...", geminiError);
+        // Retry once before giving up
+        try {
+          const retryResult = await gemini.generateContent(prompt);
+          const retryResponse = await retryResult.response;
+          const retryContent = retryResponse.text();
+
+          if (!retryContent) throw new Error("No content from AI on retry");
+
+          let retryJsonString = retryContent;
+          const retryJsonMatch = retryContent.match(/```(?:json)?\s*([\s\S]*?)```/);
+          if (retryJsonMatch) {
+            retryJsonString = retryJsonMatch[1].trim();
+          }
+
+          const retryParsed = JSON.parse(retryJsonString);
+          questions = retryParsed.questions || retryParsed;
+
+          if (!Array.isArray(questions) || questions.length < 3) {
+            throw new Error("Invalid questions format on retry");
+          }
+        } catch (retryError: unknown) {
+          console.error("Gemini API Error (attempt 2, giving up):", retryError);
+          throw retryError;
+        }
       }
     }
 
