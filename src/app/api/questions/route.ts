@@ -4,7 +4,7 @@ import { GeneratedQuestion } from '@/lib/types';
 import { z } from 'zod';
 
 const RequestSchema = z.object({
-  decision: z.string().min(5).max(1000),
+  decision: z.string().min(5).max(500),
 });
 
 const SYSTEM_PROMPT = `You are a decision clarity coach. Given a life decision, generate exactly 4-5 pointed, interactive questions to help the user gain clarity.
@@ -76,7 +76,8 @@ export async function POST(req: Request) {
         }
       ];
     } else {
-      const prompt = `You are a brutally honest therapist, not a supportive friend. Generate 5 UNCOMFORTABLE questions that will reveal what this person already knows but won't admit.
+      try {
+        const prompt = `You are a brutally honest therapist, not a supportive friend. Generate 5 UNCOMFORTABLE questions that will reveal what this person already knows but won't admit.
 
 Decision: "${decision}"
 
@@ -180,8 +181,6 @@ Return JSON:
 }
 
 Generate questions that will make them screenshot this and send it to their therapist.`
-
-      try {
         const geminiResult = await gemini.generateContent(prompt);
         const response = await geminiResult.response;
         const content = response.text();
@@ -203,31 +202,8 @@ Generate questions that will make them screenshot this and send it to their ther
           throw new Error("Invalid questions format");
         }
       } catch (geminiError: unknown) {
-        console.error("Gemini API Error (attempt 1), retrying...", geminiError);
-        // Retry once before giving up
-        try {
-          const retryResult = await gemini.generateContent(prompt);
-          const retryResponse = await retryResult.response;
-          const retryContent = retryResponse.text();
-
-          if (!retryContent) throw new Error("No content from AI on retry");
-
-          let retryJsonString = retryContent;
-          const retryJsonMatch = retryContent.match(/```(?:json)?\s*([\s\S]*?)```/);
-          if (retryJsonMatch) {
-            retryJsonString = retryJsonMatch[1].trim();
-          }
-
-          const retryParsed = JSON.parse(retryJsonString);
-          questions = retryParsed.questions || retryParsed;
-
-          if (!Array.isArray(questions) || questions.length < 3) {
-            throw new Error("Invalid questions format on retry");
-          }
-        } catch (retryError: unknown) {
-          console.error("Gemini API Error (attempt 2, giving up):", retryError);
-          throw retryError;
-        }
+        console.error("Gemini API Error:", geminiError);
+        throw geminiError;
       }
     }
 
