@@ -48,7 +48,7 @@ export function DecisionInput({ onSimulate, isSimulating, initialValue = "" }: D
           onChange={(e) => setQuery(e.target.value)}
         />
         <div className="text-right text-xs text-[#4a4a50] font-mono">
-          {query.length} / 300 CHARACTERS
+          {query.length} / 1000 CHARACTERS
         </div>
       </CardContent>
       <CardFooter className="flex justify-center pt-4">
