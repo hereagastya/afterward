@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion"
 import { X, Lock, Zap } from "lucide-react"
+import { useState } from "react"
 import Link from "next/link"
 
 interface LimitPopupProps {
@@ -10,6 +11,33 @@ interface LimitPopupProps {
 }
 
 export function LimitPopup({ isOpen, onClose }: LimitPopupProps) {
+  const [loading, setLoading] = useState(false)
+
+  const handlePay = async () => {
+    setLoading(true)
+
+    try {
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      })
+
+      const data = await res.json()
+
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        alert('Failed to create checkout session')
+        setLoading(false)
+      }
+    } catch (error) {
+      console.error('Checkout error:', error)
+      alert('Something went wrong')
+      setLoading(false)
+    }
+  }
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -54,28 +82,41 @@ export function LimitPopup({ isOpen, onClose }: LimitPopupProps) {
               {/* Text */}
               <div className="space-y-2">
                 <h3 className="text-2xl font-[var(--font-playfair)] text-white">
-                  Decision Limit Reached
+                  Simulation Locked
                 </h3>
                 <p className="text-[var(--text-secondary)] text-sm leading-relaxed max-w-[280px] mx-auto">
-                  You have reached your limit of 2 decisions per day and 10 decisions per month.
+                  You've used your free simulation. Get one more full deep-dive dual-path simulation for $4.99.
                 </p>
                 <div className="pt-2">
                     <Link 
                       href="/pricing"
                       className="text-[var(--text-muted)] hover:text-[#9d7de8] transition-colors text-xs uppercase tracking-widest font-[var(--font-dm-mono)] underline underline-offset-4"
                     >
-                      Pricing plans
+                      Pricing details
                     </Link>
                 </div>
               </div>
 
               {/* Action Button */}
               <button
-                onClick={onClose}
-                className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-[#7c5cbf] to-[#9d7de8] text-white font-bold tracking-wide hover:shadow-[0_0_20px_rgba(124,92,191,0.4)] hover:scale-[1.02] transition-all duration-300 flex items-center justify-center gap-2"
+                onClick={handlePay}
+                disabled={loading}
+                className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-[#7c5cbf] to-[#9d7de8] text-white font-bold tracking-wide hover:shadow-[0_0_20px_rgba(124,92,191,0.4)] hover:scale-[1.02] transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Zap className="w-4 h-4" />
-                <span>Got it</span>
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Processing...
+                  </span>
+                ) : (
+                  <>
+                    <Zap className="w-4 h-4" />
+                    <span>Pay $4.99</span>
+                  </>
+                )}
               </button>
             </div>
           </motion.div>

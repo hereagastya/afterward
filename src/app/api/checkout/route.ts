@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { dodo, PRODUCT_ID_PRO, PRODUCT_ID_PREMIUM } from '@/lib/dodo';
+import { dodo, PRODUCT_ID_SIMULATION } from '@/lib/dodo';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/db';
 
@@ -12,14 +12,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { tier } = await req.json();
-
-    if (!tier || !['pro', 'premium'].includes(tier)) {
-      return NextResponse.json(
-        { error: 'Invalid tier. Must be "pro" or "premium".' },
-        { status: 400 }
-      );
-    }
+    // Since this is a single product now, we don't strictly need a 'tier' sent
+    // but the payload might still send something. We ignore it.
 
     // Look up the user in the database
     const dbUser = await prisma.user.findUnique({
@@ -30,11 +24,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Select the correct product ID based on tier
-    const productId = tier === 'pro' ? PRODUCT_ID_PRO : PRODUCT_ID_PREMIUM;
+    const productId = PRODUCT_ID_SIMULATION;
 
     if (!productId) {
-      console.error(`Missing DODO_PRODUCT_ID for tier: ${tier}`);
+      console.error(`Missing DODO_PRODUCT_ID_SIMULATION`);
       return NextResponse.json(
         { error: 'Product configuration error' },
         { status: 500 }
@@ -55,7 +48,7 @@ export async function POST(req: Request) {
         },
       ],
       customer: {
-        email: realEmail, // ← CHANGED THIS LINE
+        email: realEmail,
         name:
           `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() ||
           undefined,
@@ -63,9 +56,8 @@ export async function POST(req: Request) {
       metadata: {
         userId: dbUser.id,
         clerkId: clerkId,
-        tier: tier,
       },
-      return_url: `${appUrl}/dashboard?success=true`,
+      return_url: `${appUrl}/?payment=success`, // Ensure we go back to the app home page
     });
 
     if (!session.checkout_url) {

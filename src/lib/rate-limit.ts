@@ -3,12 +3,8 @@ import { prisma } from './db'
 export interface RateLimitResult {
   allowed: boolean
   message?: string
-  dailyRemaining?: number
-  monthlyRemaining?: number
+  remaining?: number
 }
-
-const DAILY_LIMIT = 2
-const MONTHLY_LIMIT = 10
 
 // Developer bypass
 const BYPASS_EMAILS = ['sharmaagastya72@gmail.com']
@@ -17,12 +13,10 @@ async function getOrCreateUser(userId: string) {
   let user = await prisma.user.findUnique({
     where: { clerkId: userId },
     select: {
+      id: true,
       email: true,
-      isPro: true,
-      dailyDecisionCount: true,
-      monthlyDecisionCount: true,
-      lastDailyReset: true,
-      lastMonthlyReset: true
+      simulationsUsed: true,
+      simulationCredits: true,
     }
   })
 
@@ -32,22 +26,12 @@ async function getOrCreateUser(userId: string) {
       data: {
         clerkId: userId,
         email: `${userId}@placeholder.com`, // We'll update this if they save a decision with real email
-        isPro: false,
-        dailyDecisionCount: 0,
-        monthlyDecisionCount: 0,
-        lastDailyReset: new Date(),
-        lastMonthlyReset: new Date(),
+        simulationsUsed: 0,
+        simulationCredits: 1, // 1 free credit
       }
     })
     
-    return {
-      email: newUser.email,
-      isPro: newUser.isPro,
-      dailyDecisionCount: newUser.dailyDecisionCount,
-      monthlyDecisionCount: newUser.monthlyDecisionCount,
-      lastDailyReset: newUser.lastDailyReset,
-      lastMonthlyReset: newUser.lastMonthlyReset,
-    }
+    return newUser
   }
 
   return user
@@ -62,51 +46,22 @@ export async function checkRateLimit(userId: string): Promise<RateLimitResult> {
   try {
     const user = await getOrCreateUser(userId)
 
-    // Bypass for Pro users and developer
-    if (user.isPro || BYPASS_EMAILS.includes(user.email)) {
+    // Bypass for developer
+    if (BYPASS_EMAILS.includes(user.email)) {
       return { allowed: true }
     }
 
-  const now = new Date()
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-
-  let dailyCount = user.dailyDecisionCount
-  let monthlyCount = user.monthlyDecisionCount
-
-  // Reset daily counter if it's a new day
-  if (!user.lastDailyReset || user.lastDailyReset < today) {
-    dailyCount = 0
-  }
-
-  // Reset monthly counter if it's a new month
-  if (!user.lastMonthlyReset || user.lastMonthlyReset < thisMonth) {
-    monthlyCount = 0
-  }
-
-  // Check limits
-  if (dailyCount >= DAILY_LIMIT) {
-    return {
-      allowed: false,
-      message: `You've reached your daily limit of ${DAILY_LIMIT} decisions. Upgrade to Pro for 50/month or Premium for unlimited.`,
-      dailyRemaining: 0,
-      monthlyRemaining: MONTHLY_LIMIT - monthlyCount
-    }
-  }
-
-  if (monthlyCount >= MONTHLY_LIMIT) {
-    return {
-      allowed: false,
-      message: `You've reached your monthly limit of ${MONTHLY_LIMIT} decisions. Upgrade to Pro for 50/month or Premium for unlimited.`,
-      dailyRemaining: DAILY_LIMIT - dailyCount,
-      monthlyRemaining: 0
-    }
-  }
-
-    return {
-      allowed: true,
-      dailyRemaining: DAILY_LIMIT - dailyCount - 1,
-      monthlyRemaining: MONTHLY_LIMIT - monthlyCount - 1
+    if (user.simulationCredits > 0) {
+      return {
+        allowed: true,
+        remaining: user.simulationCredits - 1 // After they use this one
+      }
+    } else {
+      return {
+        allowed: false,
+        message: `You've used your free simulation. Get one more for $4.99`,
+        remaining: 0
+      }
     }
   } catch (error) {
     console.error("DB Error checking rate limit:", error)
@@ -115,7 +70,7 @@ export async function checkRateLimit(userId: string): Promise<RateLimitResult> {
   }
 }
 
-export async function incrementDecisionCount(userId: string): Promise<void> {
+export async function consumeCredit(userId: string): Promise<void> {
   // === LOCAL DEV BYPASS: DB IS DOWN ===
   if (process.env.NODE_ENV === 'development') {
     return
@@ -124,38 +79,21 @@ export async function incrementDecisionCount(userId: string): Promise<void> {
   try {
     const user = await getOrCreateUser(userId)
 
-    // Don't increment for Pro users or developer
-    if (user.isPro || BYPASS_EMAILS.includes(user.email)) {
+    // Don't decrement for developer
+    if (BYPASS_EMAILS.includes(user.email)) {
       return
     }
 
-    const now = new Date()
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-
-    let dailyCount = user.dailyDecisionCount
-    let monthlyCount = user.monthlyDecisionCount
-
-    // Reset counters if needed
-    if (!user.lastDailyReset || user.lastDailyReset < today) {
-      dailyCount = 0
+    if (user.simulationCredits > 0) {
+      await prisma.user.update({
+        where: { clerkId: userId },
+        data: {
+          simulationCredits: user.simulationCredits - 1,
+          simulationsUsed: user.simulationsUsed + 1
+        }
+      })
     }
-
-    if (!user.lastMonthlyReset || user.lastMonthlyReset < thisMonth) {
-      monthlyCount = 0
-    }
-
-    // Increment both counters
-    await prisma.user.update({
-      where: { clerkId: userId },
-      data: {
-        dailyDecisionCount: dailyCount + 1,
-        monthlyDecisionCount: monthlyCount + 1,
-        lastDailyReset: today,
-        lastMonthlyReset: thisMonth
-      }
-    })
   } catch (error) {
-    console.error("DB Error incrementing decision count:", error)
+    console.error("DB Error consuming credit:", error)
   }
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useState, useEffect, useRef, useCallback, Suspense } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { QuestionFlow } from "@/components/simulation/question-flow"
 import { SimulationOutput } from "@/components/simulation/simulation-output"
@@ -9,7 +9,6 @@ import { SaveConfirmation } from "@/components/simulation/save-confirmation"
 import { FeedbackPopup } from "@/components/feedback-popup"
 import { LimitPopup } from "@/components/limit-popup"
 import { Navbar } from "@/components/navbar"
-import { UpgradeModal } from "@/components/upgrade-modal"
 import { ConfidenceMeter } from "@/components/confidence-meter"
 
 import { analyzeAnswers } from "@/lib/analyze-answers"
@@ -24,7 +23,7 @@ import {
 import { useAuth, useClerk, useUser } from "@clerk/nextjs"
 
 import { Target, Zap, Sparkles } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { simulationLoadingMessages } from "@/lib/constants/loading-messages"
 
 // ─── Decision Graveyard data ────────────────────────────────────────────────
@@ -80,7 +79,7 @@ const steps = [
   },
 ]
 
-export default function Home() {
+function HomeContent() {
   // Flow state
   const [flowState, setFlowState] = useState<FlowState>("input")
   const [decision, setDecision] = useState("")
@@ -92,7 +91,6 @@ export default function Home() {
   const [savedDecisionId, setSavedDecisionId] = useState<string | null>(null)
   const [showFeedback, setShowFeedback] = useState(false)
   const [showLimitPopup, setShowLimitPopup] = useState(false)
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [showReplayOptIn, setShowReplayOptIn] = useState(false)
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null)
 
@@ -108,6 +106,46 @@ export default function Home() {
   const { user } = useUser()
   const { openSignIn } = useClerk()
   const router = useRouter()
+  const searchParams = useSearchParams()
+
+  // ─── Payment auto-resume ────────────────────────────────────────────────
+  useEffect(() => {
+    if (isLoaded && isSignedIn && searchParams.get("payment") === "success") {
+      const pendingSimStr = localStorage.getItem("afterward_pending_simulation")
+      if (pendingSimStr) {
+        try {
+          const pendingSim = JSON.parse(pendingSimStr)
+          setDecision(pendingSim.decision)
+          setAnswers(pendingSim.answers)
+          if (pendingSim.analysis) setAnalysis(pendingSim.analysis)
+          
+          setFlowState("simulating")
+          
+          // Clear query params
+          router.replace("/", { scroll: false })
+          localStorage.removeItem("afterward_pending_simulation")
+          
+          // Trigger simulation immediately via useEffect below or directly here:
+          fetch("/api/simulate-paths", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ decision: pendingSim.decision, answers: pendingSim.answers }),
+          }).then(async simRes => {
+            if (simRes.ok) {
+              const simData = await simRes.json()
+              setSimulations(simData)
+              setFlowState("simulation")
+            } else {
+              setFlowState("analysis") // Fallback
+            }
+          })
+          
+        } catch(e) {
+          console.error("Failed to parse pending simulation", e)
+        }
+      }
+    }
+  }, [isLoaded, isSignedIn, searchParams, router])
 
   // ─── Draft restoration ──────────────────────────────────────────────────
   useEffect(() => {
@@ -193,17 +231,6 @@ export default function Home() {
     setFlowState("analysis")
     
     try {
-      // Check limits before showing analysis
-      const limitRes = await fetch("/api/user/check-limit")
-      const limitData = await limitRes.json()
-
-      if (limitRes.ok && !limitData.allowed) {
-        // Show limit popup and reset
-        setShowLimitPopup(true)
-        handleReset()
-        return
-      }
-
       // Call Gemini-powered analysis
       const analysisResult = await analyzeAnswers(completedAnswers, decision)
       setAnalysis(analysisResult)
@@ -229,8 +256,13 @@ export default function Home() {
       })
 
       if (simRes.status === 429) {
-        setShowUpgradeModal(true)
-        setFlowState("input")
+        localStorage.setItem("afterward_pending_simulation", JSON.stringify({
+          decision,
+          answers,
+          analysis
+        }))
+        setShowLimitPopup(true)
+        setFlowState("analysis") // Keep them on analysis so they can just click continue again if they close modal
         return
       }
 
@@ -1026,11 +1058,6 @@ export default function Home() {
         onClose={() => setShowLimitPopup(false)}
       />
 
-      {/* Upgrade Modal */}
-      <UpgradeModal
-        isOpen={showUpgradeModal}
-        onClose={() => setShowUpgradeModal(false)}
-      />
 
       {/* Replay Opt-in Modal */}
       <ReplayOptInModal
@@ -1044,5 +1071,13 @@ export default function Home() {
 
     </main>
     </>
+  )
+}
+
+export default function Home() {
+  return (
+    <Suspense>
+      <HomeContent />
+    </Suspense>
   )
 }

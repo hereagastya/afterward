@@ -8,5 +8,4 @@ export const dodo = new DodoPayments({
   bearerToken: process.env.DODO_API_KEY,
 })
 
-export const PRODUCT_ID_PRO = process.env.DODO_PRODUCT_ID_PRO || ''
-export const PRODUCT_ID_PREMIUM = process.env.DODO_PRODUCT_ID_PREMIUM || ''
+export const PRODUCT_ID_SIMULATION = process.env.DODO_PRODUCT_ID_SIMULATION || 'pdt_0Nbh7EiwZBACFP7KHvrA5'

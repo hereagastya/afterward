@@ -13,11 +13,8 @@ model User {
   clerkId          String     @unique
   email            String     @unique
   stripeCustomerId String?
-  isPro            Boolean    @default(false)
-  monthlyDecisionCount Int      @default(0)
-  dailyDecisionCount   Int      @default(0)
-  lastDailyReset       DateTime @default(now())
-  lastMonthlyReset     DateTime @default(now())
+  simulationsUsed    Int      @default(0)
+  simulationCredits  Int      @default(1)
   decisions        Decision[]
   createdAt        DateTime   @default(now())
 }

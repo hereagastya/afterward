@@ -3,7 +3,7 @@ import { gemini } from '@/lib/gemini';
 import { QuestionAnswer, DualPathSimulation } from '@/lib/types';
 import { z } from 'zod';
 import { auth } from '@clerk/nextjs/server';
-import { checkRateLimit, incrementDecisionCount } from '@/lib/rate-limit';
+import { checkRateLimit, consumeCredit } from '@/lib/rate-limit';
 
 const RequestSchema = z.object({
   decision: z.string().min(2).max(500),
@@ -305,7 +305,7 @@ export async function POST(req: Request) {
     }
 
     // Increment counter AFTER successful generation
-    await incrementDecisionCount(userId);
+    await consumeCredit(userId);
 
     return NextResponse.json(simulations);
 
