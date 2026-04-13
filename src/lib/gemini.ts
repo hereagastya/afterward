@@ -7,7 +7,7 @@ if (!process.env.GOOGLE_API_KEY) {
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || "dummy");
 
 export const gemini = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-export const gemini15 = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+export const geminiFallback = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
 export async function generateContentWithFallback(request: any) {
   try {
@@ -19,8 +19,8 @@ export async function generateContentWithFallback(request: any) {
       error?.message?.includes('high demand') ||
       error?.status === 429
     ) {
-      console.warn('Google API returned 503/429. Falling back to gemini-1.5-flash.');
-      return await gemini15.generateContent(request);
+      console.warn('Google API returned 503/429. Falling back to gemini-2.5-flash-lite.');
+      return await geminiFallback.generateContent(request);
     }
     throw error;
   }
