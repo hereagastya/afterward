@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { gemini } from "@/lib/gemini"
+import { generateContentWithFallback } from "@/lib/gemini"
 
 export async function POST(req: NextRequest) {
   try {
@@ -66,7 +66,7 @@ Return ONLY this JSON, no markdown, no explanation:
   "emotionalState": "specific 2-5 word label"
 }`
 
-    const result = await gemini.generateContent({
+    const result = await generateContentWithFallback({
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       generationConfig: {
         maxOutputTokens: 400,

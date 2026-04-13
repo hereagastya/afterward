@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { gemini } from '@/lib/gemini';
+import { generateContentWithFallback } from '@/lib/gemini';
 import { QuestionAnswer, DualPathSimulation } from '@/lib/types';
 import { z } from 'zod';
 import { auth } from '@clerk/nextjs/server';
@@ -271,7 +271,7 @@ export async function POST(req: Request) {
       try {
         const prompt = formatAnswersForPrompt(decision, answers);
         
-        const geminiResult = await gemini.generateContent(prompt);
+        const geminiResult = await generateContentWithFallback(prompt);
         const response = await geminiResult.response;
         const content = response.text();
 

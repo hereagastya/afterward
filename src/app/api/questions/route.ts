@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { gemini } from '@/lib/gemini';
+import { generateContentWithFallback } from '@/lib/gemini';
 import { GeneratedQuestion } from '@/lib/types';
 import { z } from 'zod';
 
@@ -181,7 +181,7 @@ Return JSON:
 }
 
 Generate questions that will make them screenshot this and send it to their therapist.`
-        const geminiResult = await gemini.generateContent(prompt);
+        const geminiResult = await generateContentWithFallback(prompt);
         const response = await geminiResult.response;
         const content = response.text();
 
