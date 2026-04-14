@@ -116,29 +116,36 @@ function HomeContent() {
         try {
           const pendingSim = JSON.parse(pendingSimStr)
           setDecision(pendingSim.decision)
-          setAnswers(pendingSim.answers)
-          if (pendingSim.analysis) setAnalysis(pendingSim.analysis)
-          
-          setFlowState("simulating")
-          
-          // Clear query params
-          router.replace("/", { scroll: false })
-          localStorage.removeItem("afterward_pending_simulation")
-          
-          // Trigger simulation immediately via useEffect below or directly here:
-          fetch("/api/simulate-paths", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ decision: pendingSim.decision, answers: pendingSim.answers }),
-          }).then(async simRes => {
-            if (simRes.ok) {
-              const simData = await simRes.json()
-              setSimulations(simData)
-              setFlowState("simulation")
-            } else {
-              setFlowState("analysis") // Fallback
-            }
-          })
+          if (pendingSim.answers && pendingSim.answers.length > 0) {
+            setAnswers(pendingSim.answers)
+            if (pendingSim.analysis) setAnalysis(pendingSim.analysis)
+            
+            setFlowState("simulating")
+            
+            // Clear query params
+            router.replace("/", { scroll: false })
+            localStorage.removeItem("afterward_pending_simulation")
+            
+            // Trigger simulation immediately via useEffect below or directly here:
+            fetch("/api/simulate-paths", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ decision: pendingSim.decision, answers: pendingSim.answers }),
+            }).then(async simRes => {
+              if (simRes.ok) {
+                const simData = await simRes.json()
+                setSimulations(simData)
+                setFlowState("simulation")
+              } else {
+                setFlowState("analysis") // Fallback
+              }
+            })
+          } else {
+            // Resume to questions if they paid right after submitting a decision
+            setFlowState("questions")
+            router.replace("/", { scroll: false })
+            localStorage.removeItem("afterward_pending_simulation")
+          }
           
         } catch(e) {
           console.error("Failed to parse pending simulation", e)
@@ -153,8 +160,22 @@ function HomeContent() {
       const draft = localStorage.getItem("decision_draft")
       if (draft) {
         setDecision(draft)
-        setFlowState("questions")
         localStorage.removeItem("decision_draft")
+        
+        // Check limits before automatically jumping to questions
+        fetch("/api/user/check-limit").then(res => res.json()).then(data => {
+          if (data.allowed) {
+            setFlowState("questions")
+          } else {
+            localStorage.setItem("afterward_pending_simulation", JSON.stringify({
+              decision: draft
+            }))
+            setShowLimitPopup(true)
+          }
+        }).catch(() => {
+          // If check fails, stay at input as fallback
+          setFlowState("input")
+        })
       }
     } else if (isLoaded && !isSignedIn) {
       const draft = localStorage.getItem("decision_draft")
@@ -222,6 +243,22 @@ function HomeContent() {
     }
     setDecision(query)
     setError("")
+    
+    try {
+      const limitRes = await fetch("/api/user/check-limit")
+      const limitData = await limitRes.json()
+
+      if (limitRes.ok && !limitData.allowed) {
+        localStorage.setItem("afterward_pending_simulation", JSON.stringify({
+          decision: query
+        }))
+        setShowLimitPopup(true)
+        return
+      }
+    } catch (e) {
+      console.error("Failed to check limit", e)
+    }
+
     setFlowState("questions")
   }
 
