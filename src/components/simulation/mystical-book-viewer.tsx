@@ -78,8 +78,17 @@ export function MysticalBookViewer({ simulations, onComplete }: MysticalBookView
     )
   }
 
-  const simulation = currentBook === 'go' ? simulations.pathA : simulations.pathB
-  const scenario = simulation[activeScenario]
+  const simulation = currentBook === 'go' ? simulations?.pathA : simulations?.pathB
+  const scenario = simulation ? simulation[activeScenario] : null
+  
+  // Safe moment getter
+  const moments = scenario?.moments || []
+  const currentMoment = moments[currentPage - 1] || {
+    timeLabel: "Moment",
+    title: "The Path Continues",
+    description: "The details of this specific moment are unfolding as you progress through the simulation.",
+    feeling: "contemplative"
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 md:p-6 relative overflow-hidden"
@@ -156,7 +165,7 @@ export function MysticalBookViewer({ simulations, onComplete }: MysticalBookView
               <BookCover path={currentBook} />
             ) : (
               <BookPage
-                moment={scenario.moments[currentPage - 1]}
+                moment={currentMoment}
                 pageNumber={currentPage}
               />
             )}
@@ -457,8 +466,8 @@ function TradeoffsView({
             {/* Tradeoff rows */}
             <div className="space-y-8">
               {tradeoffs.map((dim, i) => {
-                const goTrade = simulations.pathA.tradeoffs[dim.key as keyof typeof simulations.pathA.tradeoffs]
-                const stayTrade = simulations.pathB.tradeoffs[dim.key as keyof typeof simulations.pathB.tradeoffs]
+                const goTrade = simulations?.pathA?.tradeoffs?.[dim.key as keyof typeof simulations.pathA.tradeoffs] || { score: 0, summary: "No data available." }
+                const stayTrade = simulations?.pathB?.tradeoffs?.[dim.key as keyof typeof simulations.pathB.tradeoffs] || { score: 0, summary: "No data available." }
 
                 return (
                   <motion.div

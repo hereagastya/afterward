@@ -142,6 +142,67 @@ Return JSON matching this structure:
 Return ONLY valid JSON. Make this feel so personal they wonder if you've been watching them.`;
 }
 
+function normalizeScenario(scenario: any, label: string): any {
+  if (!scenario) {
+    console.warn(`[AI Normalization] Missing scenario ${label}`);
+    return {
+      probability: "20%",
+      moments: [
+        { timeLabel: "3 Months", title: "Still Transitioning", description: "The details are still becoming clear. Momentum is building.", feeling: "quietly hopeful" },
+        { timeLabel: "1 Year", title: "Settling In", description: "The path you chose is taking shape. One day at a time.", feeling: "steady" },
+        { timeLabel: "3 Years", title: "The Result", description: "Looking back, the clarity you sought is finally yours.", feeling: "at peace" }
+      ]
+    };
+  }
+
+  const normalizedMoments = Array.isArray(scenario.moments) ? [...scenario.moments] : [];
+  
+  // Fill missing moments up to 3
+  while (normalizedMoments.length < 3) {
+    const idx = normalizedMoments.length;
+    const labels = ["3 Months", "1 Year", "3 Years"];
+    console.warn(`[AI Normalization] Missing moment ${idx + 1} in scenario ${label}`);
+    normalizedMoments.push({
+      timeLabel: labels[idx] || `${idx + 1} Years`,
+      title: "The Vision Unfolds",
+      description: "The AI didn't provide specific details for this moment, but the path continues forward.",
+      feeling: "contemplative"
+    });
+  }
+
+  return {
+    probability: scenario.probability || "20%",
+    moments: normalizedMoments.slice(0, 3).map((m: any) => ({
+      timeLabel: m.timeLabel || "Future Moment",
+      title: m.title || "The Vision Unfolds",
+      description: m.description || "The path continues to reveal itself as you move forward.",
+      feeling: m.feeling || "contemplative"
+    }))
+  };
+}
+
+function normalizePath(path: any, label: string): any {
+  if (!path) {
+    console.warn(`[AI Normalization] Missing path ${label}`);
+    // Create a dummy path if it's completely missing
+    return {
+      label: label,
+      baseCase: normalizeScenario(null, `${label}.baseCase`),
+      upside: normalizeScenario(null, `${label}.upside`),
+      downside: normalizeScenario(null, `${label}.downside`),
+      tradeoffs: normalizeTradeoffs(null)
+    };
+  }
+
+  return {
+    label: path.label || label,
+    baseCase: normalizeScenario(path.baseCase, `${label}.baseCase`),
+    upside: normalizeScenario(path.upside, `${label}.upside`),
+    downside: normalizeScenario(path.downside, `${label}.downside`),
+    tradeoffs: normalizeTradeoffs(path.tradeoffs)
+  };
+}
+
 function normalizeTradeoffs(tradeoffs: any): any {
   const dimensions = ['money', 'stress', 'sleep', 'growth', 'regretRisk'];
   const normalized: any = {};
@@ -286,17 +347,13 @@ export async function POST(req: Request) {
 
         simulations = JSON.parse(jsonString) as DualPathSimulation;
         
-        // Normalize tradeoffs to prevent frontend crashes
-        if (simulations.pathA) {
-          simulations.pathA.tradeoffs = normalizeTradeoffs(simulations.pathA.tradeoffs);
-        }
-        if (simulations.pathB) {
-          simulations.pathB.tradeoffs = normalizeTradeoffs(simulations.pathB.tradeoffs);
-        }
+        // Robust normalization to prevent frontend crashes
+        simulations.pathA = normalizePath(simulations.pathA, "If You GO");
+        simulations.pathB = normalizePath(simulations.pathB, "If You STAY");
         
-        // Validate structure
-        if (!simulations.pathA || !simulations.pathB || !simulations.pathA.baseCase || !simulations.pathA.tradeoffs) {
-          throw new Error("Invalid simulation format");
+        // Final sanity check
+        if (!simulations.pathA.baseCase || !simulations.pathB.baseCase) {
+          throw new Error("Failed to produce a valid simulation structure");
         }
       } catch (geminiError: unknown) {
         console.error("Gemini API Error:", geminiError);
