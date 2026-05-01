@@ -202,8 +202,36 @@ Generate questions that will make them screenshot this and send it to their ther
           throw new Error("Invalid questions format");
         }
       } catch (geminiError: unknown) {
-        console.error("Gemini API Error:", geminiError);
-        throw geminiError;
+        console.error("[Questions API] Gemini failed, using hardcoded fallback:", geminiError);
+        // Fall back to hardcoded questions — these are universal and work for any decision
+        questions = [
+          {
+            question: "What's the real reason you haven't decided yet?",
+            type: "multiple_choice",
+            options: [
+              "I'm scared, but calling it 'being realistic'",
+              "I want someone else to make this choice for me",
+              "I already decided, I just want validation",
+              "I'm waiting for a sign that will never come"
+            ]
+          },
+          {
+            question: "What would you tell your best friend if they described your exact situation?",
+            type: "text"
+          },
+          {
+            question: "It's 5 years from now and you chose wrong. What's the specific moment you knew?",
+            type: "text"
+          },
+          {
+            question: "On a scale of 1-10, how much do you already know what you want to do?",
+            type: "scale"
+          },
+          {
+            question: "What's the price of being wrong that you haven't said out loud yet?",
+            type: "text"
+          }
+        ];
       }
     }
 

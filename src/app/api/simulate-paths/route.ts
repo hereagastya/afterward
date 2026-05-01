@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { generateContentWithFallback } from '@/lib/gemini';
 import { QuestionAnswer, DualPathSimulation } from '@/lib/types';
 import { z } from 'zod';
-import { auth } from '@clerk/nextjs/server';
+import { auth, currentUser } from '@clerk/nextjs/server';
 import { checkRateLimit, consumeCredit } from '@/lib/rate-limit';
 
 const RequestSchema = z.object({
@@ -239,10 +239,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid input" }, { status: 400 });
     }
 
+    // Get real Clerk email for bypass check
+    const clerkUser = await currentUser();
+    const realEmail = clerkUser?.emailAddresses?.[0]?.emailAddress;
+
     const { decision, answers } = result.data;
 
     // CHECK RATE LIMIT FIRST (before expensive API call)
-    const rateLimitResult = await checkRateLimit(userId);
+    const rateLimitResult = await checkRateLimit(userId, realEmail);
     
     if (!rateLimitResult.allowed) {
       return NextResponse.json(
@@ -362,7 +366,7 @@ export async function POST(req: Request) {
     }
 
     // Increment counter AFTER successful generation
-    await consumeCredit(userId);
+    await consumeCredit(userId, realEmail);
 
     return NextResponse.json(simulations);
 

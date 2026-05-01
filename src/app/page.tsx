@@ -271,12 +271,22 @@ function HomeContent() {
       // Call Gemini-powered analysis
       const analysisResult = await analyzeAnswers(completedAnswers, decision)
       setAnalysis(analysisResult)
-      setIsAnalyzing(false)
     } catch (err) {
       console.error("Analysis error:", err)
-      // Fallback — analyzeAnswers has its own fallback too
-      const analysisResult = await analyzeAnswers(completedAnswers, decision)
-      setAnalysis(analysisResult)
+      // analyzeAnswers already has its own internal fallback, this should not happen
+      // but if it does, set a minimal default so the user can still continue
+      setAnalysis({
+        clarityScore: 50,
+        fearLevel: 40,
+        logicLevel: 35,
+        gutLevel: 25,
+        redFlags: ["The analysis service is temporarily unavailable. Your simulation will still be personalised."],
+        prediction: 'stay',
+        predictionConfidence: 55,
+        reasoning: "The oracle is catching its breath. Continue to see your simulation.",
+        emotionalState: "uncertain but ready"
+      })
+    } finally {
       setIsAnalyzing(false)
     }
   }

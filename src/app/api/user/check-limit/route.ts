@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { auth, currentUser } from '@clerk/nextjs/server';
 import { checkRateLimit } from '@/lib/rate-limit';
 
 export async function GET() {
@@ -10,7 +10,11 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const result = await checkRateLimit(userId);
+    // Get the real email from Clerk so the bypass works correctly
+    const user = await currentUser();
+    const realEmail = user?.emailAddresses?.[0]?.emailAddress;
+
+    const result = await checkRateLimit(userId, realEmail);
     
     return NextResponse.json(result);
   } catch (error: any) {

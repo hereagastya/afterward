@@ -90,15 +90,45 @@ export function QuestionFlow({ decision, onComplete, onBack }: QuestionFlowProps
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-6 text-center">
         <p className="text-red-400 font-[var(--font-mono)]">{error}</p>
-        <button 
-          onClick={onBack}
-          className="text-[var(--text-secondary)] hover:text-white underline underline-offset-4 transition-colors"
-        >
-          Return to Safety
-        </button>
+        <div className="flex flex-col sm:flex-row items-center gap-4">
+          <button
+            onClick={() => {
+              setError("")
+              setLoading(true)
+              fetch("/api/questions", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ decision }),
+              })
+                .then(res => {
+                  if (!res.ok) throw new Error("Failed to generate questions")
+                  return res.json()
+                })
+                .then(data => {
+                  setQuestions(data.questions)
+                  setLoading(false)
+                })
+                .catch(err => {
+                  console.error(err)
+                  setError("Failed to load questions. Please try again.")
+                  setLoading(false)
+                })
+            }}
+            className="px-6 py-2.5 rounded-lg bg-[var(--accent-primary)] text-white text-sm font-medium hover:opacity-90 transition-opacity"
+          >
+            Try Again
+          </button>
+          <button
+            onClick={onBack}
+            className="text-[var(--text-secondary)] hover:text-white underline underline-offset-4 transition-colors text-sm"
+          >
+            Return to Safety
+          </button>
+        </div>
       </div>
     )
   }
+
 
   const progress = ((currentIndex + 1) / questions.length) * 100
 
