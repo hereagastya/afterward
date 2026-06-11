@@ -8,6 +8,7 @@ import { z } from 'zod';
 // We can relax the validation here since we trust the generation API somewhat, 
 // or keep it strict. Let's keep it structurally valid but flexible for JSON.
 const RequestSchema = z.object({
+  decisionId: z.string().optional(),
   decision: z.string().min(5).max(500),
   answers: z.array(z.object({
     question: z.string(),
@@ -42,7 +43,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid input" }, { status: 400 });
     }
 
-    const { decision, answers, simulations, userChoice, analysis } = result.data;
+    const { decisionId, decision, answers, simulations, userChoice, analysis } = result.data;
 
     // Find or create user
     let dbUser = await prisma.user.findUnique({ where: { clerkId: userId } });
@@ -55,7 +56,59 @@ export async function POST(req: Request) {
       });
     }
 
-    // Create decision with all related data
+    // If decisionId is passed, update the existing pending decision record
+    if (decisionId) {
+      const existing = await prisma.decision.findUnique({
+        where: { id: decisionId }
+      });
+      
+      if (existing) {
+        // Clear old relations to prevent duplicates
+        await prisma.questionAnswer.deleteMany({ where: { decisionId } });
+        await prisma.simulation.deleteMany({ where: { decisionId } });
+
+        const updatedDecision = await prisma.decision.update({
+          where: { id: decisionId },
+          data: {
+            userChoice: userChoice,
+            status: "active",
+            analysis: analysis || null,
+            clarityScore: analysis?.clarityScore || null,
+            fearLevel: analysis?.fearLevel || null,
+            logicLevel: analysis?.logicLevel || null,
+            predictionCorrect: analysis && userChoice !== "undecided" ? 
+              (analysis.prediction === userChoice) : null,
+            questionAnswers: {
+              create: answers.map((a) => ({
+                question: a.question,
+                answer: a.answer,
+                order: a.order
+              }))
+            },
+            simulations: {
+              create: [
+                {
+                  pathType: "go",
+                  phases: simulations.pathA as any
+                },
+                {
+                  pathType: "stay",
+                  phases: simulations.pathB as any
+                }
+              ]
+            },
+          }
+        });
+
+        return NextResponse.json({
+          success: true,
+          decisionId: updatedDecision.id,
+          message: "Decision saved successfully (updated)"
+        });
+      }
+    }
+
+    // Create decision with all related data (fallback/new)
     const savedDecision = await prisma.decision.create({
       data: {
         userId: dbUser.id,
