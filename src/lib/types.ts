@@ -88,7 +88,6 @@ export interface PathSimulation {
 export interface DualPathSimulation {
   pathA: PathSimulation
   pathB: PathSimulation
-  isLocked?: boolean
 }
 
 
@@ -98,12 +97,11 @@ export interface AnalysisResult {
   fearLevel: number
   logicLevel: number
   gutLevel: number
-  redFlags?: string[]
-  prediction?: 'go' | 'stay' | string
-  predictionConfidence?: number
-  reasoning?: string
-  emotionalState?: string
-  isLocked?: boolean
+  redFlags: string[]
+  prediction: 'go' | 'stay'
+  predictionConfidence: number
+  reasoning: string
+  emotionalState: string
 }
 
 export type FlowState = 
