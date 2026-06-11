@@ -32,7 +32,7 @@ export function SaveConfirmation({
     undecided: "from-amber-600 to-amber-500"
   }
 
-  const showPrediction = analysis && analysis.prediction && userChoice !== 'undecided'
+  const showPrediction = analysis && userChoice !== 'undecided'
   const predictionCorrect = analysis?.prediction === userChoice
 
   return (
@@ -112,8 +112,8 @@ export function SaveConfirmation({
               </h4>
               <p className="text-gray-400 text-sm">
                 {predictionCorrect
-                  ? `We predicted you'd choose ${analysis.prediction?.toUpperCase()} — and you did.`
-                  : `We predicted ${analysis.prediction?.toUpperCase()}, but you went with ${userChoice.toUpperCase()}.`
+                  ? `We predicted you'd choose ${analysis.prediction.toUpperCase()} — and you did.`
+                  : `We predicted ${analysis.prediction.toUpperCase()}, but you went with ${userChoice.toUpperCase()}.`
                 }
               </p>
               {analysis.reasoning && (

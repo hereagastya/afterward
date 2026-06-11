@@ -7,12 +7,11 @@ import { DualPathSimulation, SimulationMoment } from "@/lib/types"
 interface MysticalBookViewerProps {
   simulations: DualPathSimulation
   onComplete: () => void
-  interactive?: boolean
 }
 
 type ScenarioType = 'downside' | 'baseCase' | 'upside'
 
-export function MysticalBookViewer({ simulations, onComplete, interactive = true }: MysticalBookViewerProps) {
+export function MysticalBookViewer({ simulations, onComplete }: MysticalBookViewerProps) {
   const [currentBook, setCurrentBook] = useState<'go' | 'stay'>('go')
   const [currentPage, setCurrentPage] = useState(0) // 0 = cover, 1-3 = moments
   const [activeScenario, setActiveScenario] = useState<ScenarioType>('baseCase')
@@ -57,7 +56,6 @@ export function MysticalBookViewer({ simulations, onComplete, interactive = true
 
   // Keyboard navigation
   useEffect(() => {
-    if (!interactive) return
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'ArrowRight' || e.key === ' ') {
         e.preventDefault()
@@ -69,7 +67,7 @@ export function MysticalBookViewer({ simulations, onComplete, interactive = true
     }
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
-  }, [handleNext, handlePrev, showTradeoffs, interactive])
+  }, [handleNext, handlePrev, showTradeoffs])
 
   if (showTradeoffs) {
     return (
@@ -121,7 +119,7 @@ export function MysticalBookViewer({ simulations, onComplete, interactive = true
       <div className="relative z-10 w-full max-w-2xl">
         
         {/* Scenario tabs (only show on moment pages) */}
-        {currentPage > 0 && interactive && (
+        {currentPage > 0 && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -175,50 +173,44 @@ export function MysticalBookViewer({ simulations, onComplete, interactive = true
         </AnimatePresence>
 
         {/* Navigation */}
-        {interactive && (
-          <div className="flex items-center justify-between mt-6">
-            <button
-              onClick={handlePrev}
-              disabled={currentBook === 'go' && currentPage === 0}
-              className={`text-amber-800/60 hover:text-amber-600 transition text-sm ${
-                currentBook === 'go' && currentPage === 0 ? 'invisible' : ''
-              }`}
-            >
-              ← Previous Page
-            </button>
+        <div className="flex items-center justify-between mt-6">
+          <button
+            onClick={handlePrev}
+            disabled={currentBook === 'go' && currentPage === 0}
+            className={`text-amber-800/60 hover:text-amber-600 transition text-sm ${
+              currentBook === 'go' && currentPage === 0 ? 'invisible' : ''
+            }`}
+          >
+            ← Previous Page
+          </button>
 
-            <div className="text-amber-900/40 text-xs font-mono">
-              {currentBook === 'go' ? 'Book I' : 'Book II'} • Page {currentPage}/3
-            </div>
-
-            <button
-              onClick={handleNext}
-              className="text-amber-800/60 hover:text-amber-600 transition text-sm"
-            >
-              {currentBook === 'stay' && currentPage === 3 ? 'See The Cost →' : 'Turn Page →'}
-            </button>
+          <div className="text-amber-900/40 text-xs font-mono">
+            {currentBook === 'go' ? 'Book I' : 'Book II'} • Page {currentPage}/3
           </div>
-        )}
+
+          <button
+            onClick={handleNext}
+            className="text-amber-800/60 hover:text-amber-600 transition text-sm"
+          >
+            {currentBook === 'stay' && currentPage === 3 ? 'See The Cost →' : 'Turn Page →'}
+          </button>
+        </div>
 
         {/* Click zones */}
-        {interactive && (
-          <>
-            <button
-              onClick={handlePrev}
-              disabled={currentBook === 'go' && currentPage === 0}
-              className="fixed left-0 top-0 bottom-0 w-1/4 opacity-0 disabled:cursor-not-allowed z-20"
-              aria-label="Previous page"
-            />
-            <button
-              onClick={handleNext}
-              className="fixed right-0 top-0 bottom-0 w-1/4 opacity-0 z-20"
-              aria-label="Next page"
-            />
-          </>
-        )}
+        <button
+          onClick={handlePrev}
+          disabled={currentBook === 'go' && currentPage === 0}
+          className="fixed left-0 top-0 bottom-0 w-1/4 opacity-0 disabled:cursor-not-allowed z-20"
+          aria-label="Previous page"
+        />
+        <button
+          onClick={handleNext}
+          className="fixed right-0 top-0 bottom-0 w-1/4 opacity-0 z-20"
+          aria-label="Next page"
+        />
 
         {/* Hint on cover */}
-        {currentPage === 0 && currentBook === 'go' && interactive && (
+        {currentPage === 0 && currentBook === 'go' && (
           <motion.div
             initial={{ opacity: 1 }}
             animate={{ opacity: 0 }}
@@ -358,7 +350,7 @@ function BookPage({
           className="text-3xl md:text-4xl text-amber-900 mb-6 leading-snug"
           style={{ fontFamily: 'Georgia, serif' }}
         >
-          {moment.title || "The Vision Unfolds"}
+          {moment.title}
         </motion.h2>
 
         {/* Story text — no fixed aspect ratio, text flows naturally */}
@@ -372,7 +364,7 @@ function BookPage({
             className="text-base md:text-lg text-amber-800/85 leading-[1.8] whitespace-pre-line"
             style={{ fontFamily: 'Georgia, serif', textIndent: '2em' }}
           >
-            {moment.description || "The path continues to reveal itself as you move forward."}
+            {moment.description}
           </p>
         </motion.div>
 
@@ -527,7 +519,7 @@ function TradeoffsView({
                         </div>
 
                         <p className="text-amber-800/70 text-xs leading-relaxed" style={{ fontFamily: 'Georgia, serif' }}>
-                          {goTrade.summary || "Locked behind payment."}
+                          {goTrade.summary}
                         </p>
                       </div>
 
@@ -563,7 +555,7 @@ function TradeoffsView({
                         </div>
 
                         <p className="text-amber-800/70 text-xs leading-relaxed" style={{ fontFamily: 'Georgia, serif' }}>
-                          {stayTrade.summary || "Locked behind payment."}
+                          {stayTrade.summary}
                         </p>
                       </div>
                     </div>

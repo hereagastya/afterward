@@ -43,9 +43,6 @@ function computeHeuristicAnalysis(answers: { question: string; answer: string }[
   }
 }
 
-import { auth, currentUser } from '@clerk/nextjs/server'
-import { checkRateLimit } from '@/lib/rate-limit'
-
 export async function POST(req: NextRequest) {
   let decision = ""
   let answers: { question: string; answer: string }[] = []
@@ -60,31 +57,6 @@ export async function POST(req: NextRequest) {
     }
   } catch {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 })
-  }
-
-  // Check rate limit / payment status
-  let userId: string | null = null
-  let realEmail: string | undefined = undefined
-  try {
-    const authObj = await auth()
-    userId = authObj.userId
-    if (userId) {
-      const clerkUser = await currentUser()
-      realEmail = clerkUser?.emailAddresses?.[0]?.emailAddress
-    }
-  } catch (authErr) {
-    console.warn("[Analyze API] Auth check failed:", authErr)
-  }
-
-  let isAllowed = false
-  if (userId) {
-    try {
-      const rateLimitResult = await checkRateLimit(userId, realEmail)
-      isAllowed = rateLimitResult.allowed
-    } catch (limitErr) {
-      console.warn("[Analyze API] Rate limit check failed, using default (allowed):", limitErr)
-      isAllowed = true
-    }
   }
 
   const prompt = `You are reading someone's actual answers about a real decision they're agonizing over. Your job is to analyze what's REALLY going on — not what they said, but what they revealed without meaning to.
@@ -116,8 +88,6 @@ ANALYSIS INSTRUCTIONS:
 Return ONLY valid JSON, no markdown, no explanation:
 {"clarityScore":50,"fearLevel":40,"logicLevel":35,"gutLevel":25,"redFlags":["flag1","flag2"],"prediction":"go","predictionConfidence":65,"reasoning":"one sentence","emotionalState":"2-5 words"}`
 
-  let analysis: any = null
-
   try {
     const result = await generateContentWithFallback(prompt)
     const response = await result.response
@@ -125,80 +95,67 @@ Return ONLY valid JSON, no markdown, no explanation:
 
     if (!text || text.trim().length === 0) {
       console.warn("[Analyze API] Empty AI response, using heuristic fallback")
-      analysis = computeHeuristicAnalysis(answers, decision)
+      return NextResponse.json(computeHeuristicAnalysis(answers, decision))
+    }
+
+    // Extract JSON — try code block first, then raw object
+    let rawJson: string | null = null
+    const jsonBlockMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/)
+    if (jsonBlockMatch) {
+      rawJson = jsonBlockMatch[1].trim()
     } else {
-      // Extract JSON — try code block first, then raw object
-      let rawJson: string | null = null
-      const jsonBlockMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/)
-      if (jsonBlockMatch) {
-        rawJson = jsonBlockMatch[1].trim()
-      } else {
-        const jsonObjectMatch = text.match(/\{[\s\S]*\}/)
-        if (jsonObjectMatch) rawJson = jsonObjectMatch[0]
-      }
-
-      if (!rawJson) {
-        console.warn("[Analyze API] Could not extract JSON, using heuristic fallback. Response:", text.substring(0, 200))
-        analysis = computeHeuristicAnalysis(answers, decision)
-      } else {
-        try {
-          analysis = JSON.parse(rawJson)
-        } catch (parseErr) {
-          console.warn("[Analyze API] JSON parse error, using heuristic fallback:", parseErr)
-          analysis = computeHeuristicAnalysis(answers, decision)
-        }
-      }
+      const jsonObjectMatch = text.match(/\{[\s\S]*\}/)
+      if (jsonObjectMatch) rawJson = jsonObjectMatch[0]
     }
 
-    if (analysis) {
-      // Validate/sanitize fields if it was parsed successfully from Gemini
-      const requiredNumbers = ['clarityScore', 'fearLevel', 'logicLevel', 'gutLevel', 'predictionConfidence']
-      const hasAllFields = requiredNumbers.every(f => typeof analysis[f] === 'number')
-      if (!hasAllFields) {
-        console.warn("[Analyze API] Missing fields in AI response, using heuristic fallback. Got:", Object.keys(analysis))
-        analysis = computeHeuristicAnalysis(answers, decision)
-      } else {
-        // Enforce fear+logic+gut = 100
-        const total = (analysis.fearLevel || 0) + (analysis.logicLevel || 0) + (analysis.gutLevel || 0)
-        if (total === 0) {
-          analysis.fearLevel = 34; analysis.logicLevel = 33; analysis.gutLevel = 33
-        } else if (total !== 100) {
-          const scale = 100 / total
-          analysis.fearLevel = Math.round(analysis.fearLevel * scale)
-          analysis.logicLevel = Math.round(analysis.logicLevel * scale)
-          analysis.gutLevel = 100 - analysis.fearLevel - analysis.logicLevel
-        }
-
-        // Clamp and sanitize
-        analysis.clarityScore = Math.max(0, Math.min(100, Math.round(analysis.clarityScore)))
-        analysis.predictionConfidence = Math.max(50, Math.min(95, Math.round(analysis.predictionConfidence)))
-        analysis.redFlags = Array.isArray(analysis.redFlags) ? analysis.redFlags.slice(0, 3) : []
-        if (analysis.prediction !== 'go' && analysis.prediction !== 'stay') {
-          analysis.prediction = analysis.predictionConfidence > 70 ? 'go' : 'stay'
-        }
-        analysis.reasoning = analysis.reasoning || "Your decision patterns reveal more than your words."
-        analysis.emotionalState = analysis.emotionalState || "searching for clarity"
-      }
+    if (!rawJson) {
+      console.warn("[Analyze API] Could not extract JSON, using heuristic fallback. Response:", text.substring(0, 200))
+      return NextResponse.json(computeHeuristicAnalysis(answers, decision))
     }
+
+    let analysis: any
+    try {
+      analysis = JSON.parse(rawJson)
+    } catch (parseErr) {
+      console.warn("[Analyze API] JSON parse error, using heuristic fallback:", parseErr)
+      return NextResponse.json(computeHeuristicAnalysis(answers, decision))
+    }
+
+    // Validate — if any required field is missing, fall back
+    const requiredNumbers = ['clarityScore', 'fearLevel', 'logicLevel', 'gutLevel', 'predictionConfidence']
+    const hasAllFields = requiredNumbers.every(f => typeof analysis[f] === 'number')
+    if (!hasAllFields) {
+      console.warn("[Analyze API] Missing fields in AI response, using heuristic fallback. Got:", Object.keys(analysis))
+      return NextResponse.json(computeHeuristicAnalysis(answers, decision))
+    }
+
+    // Enforce fear+logic+gut = 100
+    const total = (analysis.fearLevel || 0) + (analysis.logicLevel || 0) + (analysis.gutLevel || 0)
+    if (total === 0) {
+      analysis.fearLevel = 34; analysis.logicLevel = 33; analysis.gutLevel = 33
+    } else if (total !== 100) {
+      const scale = 100 / total
+      analysis.fearLevel = Math.round(analysis.fearLevel * scale)
+      analysis.logicLevel = Math.round(analysis.logicLevel * scale)
+      analysis.gutLevel = 100 - analysis.fearLevel - analysis.logicLevel
+    }
+
+    // Clamp and sanitize
+    analysis.clarityScore = Math.max(0, Math.min(100, Math.round(analysis.clarityScore)))
+    analysis.predictionConfidence = Math.max(50, Math.min(95, Math.round(analysis.predictionConfidence)))
+    analysis.redFlags = Array.isArray(analysis.redFlags) ? analysis.redFlags.slice(0, 3) : []
+    if (analysis.prediction !== 'go' && analysis.prediction !== 'stay') {
+      analysis.prediction = analysis.predictionConfidence > 70 ? 'go' : 'stay'
+    }
+    analysis.reasoning = analysis.reasoning || "Your decision patterns reveal more than your words."
+    analysis.emotionalState = analysis.emotionalState || "searching for clarity"
+
+    console.log('[Analyze API] Success — Clarity:', analysis.clarityScore, 'Fear/Logic/Gut:', analysis.fearLevel, analysis.logicLevel, analysis.gutLevel)
+    return NextResponse.json(analysis)
 
   } catch (error) {
     console.warn("[Analyze API] Gemini call failed, using heuristic fallback:", error)
-    analysis = computeHeuristicAnalysis(answers, decision)
+    // Never return a 500 — always return something useful
+    return NextResponse.json(computeHeuristicAnalysis(answers, decision))
   }
-
-  // Perform payment/lock formatting before returning
-  if (analysis) {
-    analysis.isLocked = !isAllowed
-    if (!isAllowed) {
-      delete analysis.redFlags
-      delete analysis.prediction
-      delete analysis.predictionConfidence
-      delete analysis.reasoning
-      delete analysis.emotionalState
-    }
-    console.log('[Analyze API] Success — Clarity:', analysis.clarityScore, 'Fear/Logic/Gut:', analysis.fearLevel, analysis.logicLevel, analysis.gutLevel)
-    return NextResponse.json(analysis)
-  }
-
-  return NextResponse.json({ error: "Failed to perform analysis" }, { status: 500 })
 }

@@ -16,7 +16,9 @@ export function ShareAnalysisButton({ analysis, decision }: ShareAnalysisButtonP
 🧠 Logic: ${analysis.logicLevel}%
 💚 Gut: ${analysis.gutLevel}%
 
-${analysis.prediction ? `Prediction: I'll choose ${analysis.prediction.toUpperCase()}\n\n` : ''}${analysis.emotionalState}
+Prediction: I'll choose ${analysis.prediction.toUpperCase()}
+
+${analysis.emotionalState}
 
 Try it yourself at afterward.fyi`
 

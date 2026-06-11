@@ -245,9 +245,18 @@ export async function POST(req: Request) {
 
     const { decision, answers } = result.data;
 
-    // CHECK RATE LIMIT FIRST (but do not block with 429)
+    // CHECK RATE LIMIT FIRST (before expensive API call)
     const rateLimitResult = await checkRateLimit(userId, realEmail);
-    const isAllowed = rateLimitResult.allowed;
+    
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        { 
+          error: "rate_limit_exceeded",
+          message: rateLimitResult.message || "You've reached your limit. Upgrade to continue."
+        },
+        { status: 429 }
+      );
+    }
 
     let simulations: DualPathSimulation;
 
@@ -356,44 +365,10 @@ export async function POST(req: Request) {
       }
     }
 
-    // Format output based on permissions (omit fields entirely if locked)
-    const responseData: any = {
-      ...simulations,
-      isLocked: !isAllowed
-    };
+    // Increment counter AFTER successful generation
+    await consumeCredit(userId, realEmail);
 
-    if (!isAllowed) {
-      const paths = ['pathA', 'pathB'];
-      const scenarios = ['baseCase', 'upside', 'downside'];
-      paths.forEach(p => {
-        if (responseData[p]) {
-          scenarios.forEach(s => {
-            if (responseData[p][s] && Array.isArray(responseData[p][s].moments)) {
-              responseData[p][s].moments = responseData[p][s].moments.map((m: any) => {
-                const copy = { ...m };
-                delete copy.title;
-                delete copy.description;
-                return copy;
-              });
-            }
-          });
-          if (responseData[p].tradeoffs) {
-            Object.keys(responseData[p].tradeoffs).forEach(key => {
-              if (responseData[p].tradeoffs[key]) {
-                delete responseData[p].tradeoffs[key].summary;
-              }
-            });
-          }
-        }
-      });
-    }
-
-    // Increment counter AFTER successful generation only if allowed
-    if (isAllowed) {
-      await consumeCredit(userId, realEmail);
-    }
-
-    return NextResponse.json(responseData);
+    return NextResponse.json(simulations);
 
   } catch (error: any) {
     console.error("Simulate Paths API Error:", error);
