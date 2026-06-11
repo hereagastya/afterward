@@ -111,46 +111,73 @@ function HomeContent() {
   // ─── Payment auto-resume ────────────────────────────────────────────────
   useEffect(() => {
     if (isLoaded && isSignedIn && searchParams.get("payment") === "success") {
-      const pendingSimStr = localStorage.getItem("afterward_pending_simulation")
-      if (pendingSimStr) {
-        try {
-          const pendingSim = JSON.parse(pendingSimStr)
-          setDecision(pendingSim.decision)
-          if (pendingSim.answers && pendingSim.answers.length > 0) {
-            setAnswers(pendingSim.answers)
-            if (pendingSim.analysis) setAnalysis(pendingSim.analysis)
-            
-            setFlowState("simulating")
-            
-            // Clear query params
-            router.replace("/", { scroll: false })
-            localStorage.removeItem("afterward_pending_simulation")
-            
-            // Trigger simulation immediately via useEffect below or directly here:
-            fetch("/api/simulate-paths", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ decision: pendingSim.decision, answers: pendingSim.answers }),
-            }).then(async simRes => {
-              if (simRes.ok) {
-                const simData = await simRes.json()
-                setSimulations(simData)
-                setFlowState("simulation")
-              } else {
-                setFlowState("analysis") // Fallback
-              }
-            })
-          } else {
-            // Resume to questions if they paid right after submitting a decision
-            setFlowState("questions")
-            router.replace("/", { scroll: false })
-            localStorage.removeItem("afterward_pending_simulation")
+      const restoreAndRun = async () => {
+        let pendingSim: any = null;
+        const pendingSimStr = localStorage.getItem("afterward_pending_simulation");
+        
+        if (pendingSimStr) {
+          try {
+            pendingSim = JSON.parse(pendingSimStr);
+          } catch(e) {
+            console.error("Failed to parse pending simulation from local storage", e);
           }
-          
-        } catch(e) {
-          console.error("Failed to parse pending simulation", e)
         }
-      }
+        
+        if (!pendingSim) {
+          try {
+            const dbRes = await fetch("/api/user/get-pending-decision");
+            if (dbRes.ok) {
+              const data = await dbRes.json();
+              if (data.decision) {
+                pendingSim = data.decision;
+                // normalize structure to match localStorage format
+                pendingSim.answers = pendingSim.answers ? JSON.parse(pendingSim.answers) : [];
+                pendingSim.analysis = pendingSim.analysis ? JSON.parse(pendingSim.analysis) : null;
+                pendingSim.simulations = pendingSim.simulations ? JSON.parse(pendingSim.simulations) : null;
+              }
+            }
+          } catch(e) {
+            console.error("Failed to fetch pending decision from DB", e);
+          }
+        }
+
+        if (pendingSim) {
+          setDecision(pendingSim.decision);
+          if (pendingSim.answers && pendingSim.answers.length > 0) {
+            setAnswers(pendingSim.answers);
+            if (pendingSim.analysis) setAnalysis(pendingSim.analysis);
+            
+            setFlowState("simulating");
+            router.replace("/", { scroll: false });
+            localStorage.removeItem("afterward_pending_simulation");
+            
+            if (pendingSim.simulations) {
+              setSimulations(pendingSim.simulations);
+              setFlowState("simulation");
+            } else {
+              fetch("/api/simulate-paths", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ decision: pendingSim.decision, answers: pendingSim.answers }),
+              }).then(async simRes => {
+                if (simRes.ok) {
+                  const simData = await simRes.json();
+                  setSimulations(simData);
+                  setFlowState("simulation");
+                } else {
+                  setFlowState("analysis");
+                }
+              });
+            }
+          } else {
+            setFlowState("questions");
+            router.replace("/", { scroll: false });
+            localStorage.removeItem("afterward_pending_simulation");
+          }
+        }
+      };
+      
+      restoreAndRun();
     }
   }, [isLoaded, isSignedIn, searchParams, router])
 
@@ -268,13 +295,23 @@ function HomeContent() {
     setFlowState("analysis")
     
     try {
-      // Call Gemini-powered analysis
-      const analysisResult = await analyzeAnswers(completedAnswers, decision)
-      setAnalysis(analysisResult)
+      const [analysisResult, simRes] = await Promise.all([
+        analyzeAnswers(completedAnswers, decision),
+        fetch("/api/simulate-paths", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ decision, answers: completedAnswers }),
+        })
+      ]);
+
+      setAnalysis(analysisResult);
+
+      if (simRes.ok) {
+        const simData = await simRes.json();
+        setSimulations(simData);
+      }
     } catch (err) {
       console.error("Analysis error:", err)
-      // analyzeAnswers already has its own internal fallback, this should not happen
-      // but if it does, set a minimal default so the user can still continue
       setAnalysis({
         clarityScore: 50,
         fearLevel: 40,
@@ -294,24 +331,17 @@ function HomeContent() {
   const handleContinueFromAnalysis = async () => {
     setFlowState("simulating")
 
+    if (simulations) {
+      setTimeout(() => setFlowState("simulation"), 1500);
+      return;
+    }
+
     try {
-      // 1. Generate simulations
       const simRes = await fetch("/api/simulate-paths", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ decision, answers }),
       })
-
-      if (simRes.status === 429) {
-        localStorage.setItem("afterward_pending_simulation", JSON.stringify({
-          decision,
-          answers,
-          analysis
-        }))
-        setShowLimitPopup(true)
-        setFlowState("analysis") // Keep them on analysis so they can just click continue again if they close modal
-        return
-      }
 
       if (!simRes.ok) {
         const errorData = await simRes.json().catch(() => ({}))
@@ -321,13 +351,43 @@ function HomeContent() {
       const simData = await simRes.json()
       setSimulations(simData)
 
-      // Now go to journey with simulations ready
       setFlowState("simulation")
     } catch (err: any) {
       console.error("Simulation generation error:", err)
       setError(err.message || "The oracle is silent. Failed to generate your futures. Please try again.")
-      // Revert to analysis so they don't lose their context and can retry
       setFlowState("analysis")
+    }
+  }
+
+  const handleCheckout = async () => {
+    try {
+      const payload = { decision, answers, analysis, simulations };
+      const res = await fetch("/api/save-pending-decision", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      
+      let decisionId = null;
+      if (res.ok) {
+        const data = await res.json();
+        decisionId = data.decisionId;
+      }
+      
+      localStorage.setItem("afterward_pending_simulation", JSON.stringify({
+        ...payload,
+        decisionId
+      }));
+
+      const checkoutRes = await fetch("/api/checkout", {
+        method: "POST"
+      });
+      if (!checkoutRes.ok) throw new Error("Failed to create checkout session");
+      const checkoutData = await checkoutRes.json();
+      window.location.href = checkoutData.url;
+    } catch (err) {
+      console.error("Checkout error", err);
+      setError("Failed to initiate checkout. Please try again.");
     }
   }
 
@@ -965,7 +1025,9 @@ function HomeContent() {
               ) : (
                 <ConfidenceMeter 
                   analysis={analysis}
+                  simulations={simulations}
                   onContinue={handleContinueFromAnalysis}
+                  onCheckout={handleCheckout}
                 />
               )}
             </motion.div>
