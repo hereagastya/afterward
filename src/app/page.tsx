@@ -431,7 +431,7 @@ function HomeContent() {
               "ratingCount": "127"
             },
             "description": "AI-powered decision simulator that shows you both futures before you choose. See what happens if you GO vs if you STAY.",
-            "screenshot": "https://afterward.fyi/og-image.png",
+            "screenshot": "https://afterward.fyi/og-image-v2.png",
             "featureList": [
               "AI-powered future simulation",
               "Dual timeline visualization",

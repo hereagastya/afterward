@@ -71,7 +71,7 @@ export const metadata: Metadata = {
     siteName: "Afterward",
     images: [
       {
-        url: "/og-image.png",
+        url: "/og-image-v2.png",
         width: 1200,
         height: 630,
         alt: "Afterward - Simulate regret before you feel it",
@@ -84,7 +84,7 @@ export const metadata: Metadata = {
     site: "@Agastyabuilds",
     title: "Afterward - AI Decision Simulator",
     description: "See both futures before you choose. Simulate regret before you feel it.",
-    images: ["/og-image.png"],
+    images: ["/og-image-v2.png"],
     creator: "@Agastyabuilds"
   },
   robots: {
