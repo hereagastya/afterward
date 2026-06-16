@@ -1,8 +1,9 @@
 "use client"
 
+import { useState } from "react"
 import { motion } from "framer-motion"
 import { AnalysisResult } from "@/lib/types"
-import { Lock, Sparkles, Eye, TrendingUp, AlertTriangle, GitBranch } from "lucide-react"
+import { Lock, Sparkles, Eye, TrendingUp, AlertTriangle, GitBranch, Loader2 } from "lucide-react"
 
 interface ConfidenceMeterProps {
   analysis: AnalysisResult
@@ -21,6 +22,33 @@ export function ConfidenceMeter({ analysis, onContinue }: ConfidenceMeterProps) 
     reasoning,
     emotionalState
   } = analysis
+
+  const [loading, setLoading] = useState(false)
+
+  const handlePay = async () => {
+    setLoading(true)
+
+    try {
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      })
+
+      const data = await res.json()
+
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        alert('Failed to create checkout session')
+        setLoading(false)
+      }
+    } catch (error) {
+      console.error('Checkout error:', error)
+      alert('Something went wrong')
+      setLoading(false)
+    }
+  }
 
   // Hardcoded for now — will be connected to payment status later
   const isPaid = false
@@ -464,12 +492,14 @@ export function ConfidenceMeter({ analysis, onContinue }: ConfidenceMeterProps) 
 
                       {/* CTA Button */}
                       <motion.button
+                        onClick={handlePay}
+                        disabled={loading}
                         initial={{ y: 10, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
                         transition={{ delay: 2.8 }}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        className="w-full py-4 rounded-xl text-white font-semibold text-lg relative overflow-hidden group"
+                        whileHover={{ scale: loading ? 1 : 1.02 }}
+                        whileTap={{ scale: loading ? 1 : 0.98 }}
+                        className="w-full py-4 rounded-xl text-white font-semibold text-lg relative overflow-hidden group disabled:opacity-80 disabled:cursor-not-allowed"
                         style={{
                           background: "linear-gradient(135deg, #7c3aed 0%, #9333ea 50%, #7c3aed 100%)",
                         }}
@@ -480,7 +510,16 @@ export function ConfidenceMeter({ analysis, onContinue }: ConfidenceMeterProps) 
                           transition={{ duration: 3, repeat: Infinity, ease: "linear", repeatDelay: 2 }}
                           className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent"
                         />
-                        <span className="relative z-10">Continue &amp; Pay — $4.99</span>
+                        <span className="relative z-10 flex items-center justify-center gap-2">
+                          {loading ? (
+                            <>
+                              <Loader2 className="w-5 h-5 animate-spin" />
+                              Loading...
+                            </>
+                          ) : (
+                            "Continue & Pay — $4.99"
+                          )}
+                        </span>
                       </motion.button>
 
                       <p className="text-gray-600 text-xs text-center mt-3">
