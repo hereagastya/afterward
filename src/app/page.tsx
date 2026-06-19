@@ -126,19 +126,28 @@ function HomeContent() {
             router.replace("/", { scroll: false })
             localStorage.removeItem("afterward_pending_simulation")
             
-            // Trigger simulation immediately via useEffect below or directly here:
-            fetch("/api/simulate-paths", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ decision: pendingSim.decision, answers: pendingSim.answers }),
-            }).then(async simRes => {
-              if (simRes.ok) {
-                const simData = await simRes.json()
-                setSimulations(simData)
-                setFlowState("simulation")
-              } else {
-                setFlowState("analysis") // Fallback
-              }
+            // Refetch both unlocked analysis and full simulation
+            Promise.all([
+              fetch("/api/analyze", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ decision: pendingSim.decision, answers: pendingSim.answers }),
+              }).then(res => res.json()),
+              fetch("/api/simulate-paths", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ decision: pendingSim.decision, answers: pendingSim.answers }),
+              }).then(res => {
+                if (!res.ok) throw new Error("Simulation failed")
+                return res.json()
+              })
+            ]).then(([analyzeData, simData]) => {
+              setAnalysis(analyzeData)
+              setSimulations(simData)
+              setFlowState("simulation")
+            }).catch(err => {
+              console.error("Failed to resume simulation after payment", err)
+              setFlowState("analysis") // Fallback
             })
           } else {
             // Resume to questions if they paid right after submitting a decision
@@ -966,6 +975,8 @@ function HomeContent() {
                 <ConfidenceMeter 
                   analysis={analysis}
                   onContinue={handleContinueFromAnalysis}
+                  decision={decision}
+                  answers={answers}
                 />
               )}
             </motion.div>

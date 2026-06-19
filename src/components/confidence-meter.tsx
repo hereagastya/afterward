@@ -6,11 +6,13 @@ import { AnalysisResult } from "@/lib/types"
 import { Lock, Sparkles, Eye, TrendingUp, AlertTriangle, GitBranch, Loader2 } from "lucide-react"
 
 interface ConfidenceMeterProps {
-  analysis: AnalysisResult
+  analysis: AnalysisResult & { isLocked?: boolean }
   onContinue: () => void
+  decision?: string
+  answers?: { question: string; answer: string }[]
 }
 
-export function ConfidenceMeter({ analysis, onContinue }: ConfidenceMeterProps) {
+export function ConfidenceMeter({ analysis, onContinue, decision, answers }: ConfidenceMeterProps) {
   const {
     clarityScore,
     fearLevel,
@@ -25,8 +27,20 @@ export function ConfidenceMeter({ analysis, onContinue }: ConfidenceMeterProps) 
 
   const [loading, setLoading] = useState(false)
 
+  // Derive paywall state from API response
+  const isLocked = analysis.isLocked === true
+
   const handlePay = async () => {
     setLoading(true)
+
+    // Save pending simulation to localStorage so we can resume after payment
+    if (decision) {
+      localStorage.setItem("afterward_pending_simulation", JSON.stringify({
+        decision,
+        answers: answers || [],
+        analysis
+      }))
+    }
 
     try {
       const res = await fetch('/api/checkout', {
@@ -50,8 +64,6 @@ export function ConfidenceMeter({ analysis, onContinue }: ConfidenceMeterProps) 
     }
   }
 
-  // Hardcoded for now — will be connected to payment status later
-  const isPaid = false
 
   return (
     <motion.div
@@ -279,7 +291,7 @@ export function ConfidenceMeter({ analysis, onContinue }: ConfidenceMeterProps) 
           {/* LOCKED SECTION — Behind paywall                                */}
           {/* ═══════════════════════════════════════════════════════════════ */}
 
-          {isPaid ? (
+          {!isLocked ? (
             <>
               {/* Red Flags — Urgent, specific, personal */}
               {redFlags.length > 0 && (

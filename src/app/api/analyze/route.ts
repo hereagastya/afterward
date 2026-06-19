@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { generateContentWithFallback } from "@/lib/gemini"
+import { auth, currentUser } from "@clerk/nextjs/server"
+import { checkRateLimit } from "@/lib/rate-limit"
 
 // Heuristic fallback: compute a rough analysis from raw answer text without AI
 function computeHeuristicAnalysis(answers: { question: string; answer: string }[], decision: string) {
@@ -59,6 +61,36 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 })
   }
 
+  // ── Check if user has credits ─────────────────────────────────────────
+  let hasCredits = true
+  try {
+    const { userId } = await auth()
+    if (userId) {
+      const clerkUser = await currentUser()
+      const realEmail = clerkUser?.emailAddresses?.[0]?.emailAddress
+      const rateLimitResult = await checkRateLimit(userId, realEmail)
+      hasCredits = rateLimitResult.allowed
+    }
+  } catch (e) {
+    console.warn("[Analyze API] Rate limit check failed, defaulting to unlocked:", e)
+    // If the check fails, allow full access so users aren't blocked by infra issues
+  }
+
+  // Helper: strip premium fields for locked (unpaid) users
+  function lockAnalysis(full: any) {
+    if (hasCredits) {
+      return { ...full, isLocked: false }
+    }
+    return {
+      clarityScore: full.clarityScore,
+      fearLevel: full.fearLevel,
+      logicLevel: full.logicLevel,
+      gutLevel: full.gutLevel,
+      emotionalState: full.emotionalState,
+      isLocked: true,
+    }
+  }
+
   const prompt = `You are reading someone's actual answers about a real decision they're agonizing over. Your job is to analyze what's REALLY going on — not what they said, but what they revealed without meaning to.
 
 DECISION: "${decision}"
@@ -95,7 +127,7 @@ Return ONLY valid JSON, no markdown, no explanation:
 
     if (!text || text.trim().length === 0) {
       console.warn("[Analyze API] Empty AI response, using heuristic fallback")
-      return NextResponse.json(computeHeuristicAnalysis(answers, decision))
+      return NextResponse.json(lockAnalysis(computeHeuristicAnalysis(answers, decision)))
     }
 
     // Extract JSON — try code block first, then raw object
@@ -110,7 +142,7 @@ Return ONLY valid JSON, no markdown, no explanation:
 
     if (!rawJson) {
       console.warn("[Analyze API] Could not extract JSON, using heuristic fallback. Response:", text.substring(0, 200))
-      return NextResponse.json(computeHeuristicAnalysis(answers, decision))
+      return NextResponse.json(lockAnalysis(computeHeuristicAnalysis(answers, decision)))
     }
 
     let analysis: any
@@ -118,7 +150,7 @@ Return ONLY valid JSON, no markdown, no explanation:
       analysis = JSON.parse(rawJson)
     } catch (parseErr) {
       console.warn("[Analyze API] JSON parse error, using heuristic fallback:", parseErr)
-      return NextResponse.json(computeHeuristicAnalysis(answers, decision))
+      return NextResponse.json(lockAnalysis(computeHeuristicAnalysis(answers, decision)))
     }
 
     // Validate — if any required field is missing, fall back
@@ -126,7 +158,7 @@ Return ONLY valid JSON, no markdown, no explanation:
     const hasAllFields = requiredNumbers.every(f => typeof analysis[f] === 'number')
     if (!hasAllFields) {
       console.warn("[Analyze API] Missing fields in AI response, using heuristic fallback. Got:", Object.keys(analysis))
-      return NextResponse.json(computeHeuristicAnalysis(answers, decision))
+      return NextResponse.json(lockAnalysis(computeHeuristicAnalysis(answers, decision)))
     }
 
     // Enforce fear+logic+gut = 100
@@ -150,12 +182,13 @@ Return ONLY valid JSON, no markdown, no explanation:
     analysis.reasoning = analysis.reasoning || "Your decision patterns reveal more than your words."
     analysis.emotionalState = analysis.emotionalState || "searching for clarity"
 
-    console.log('[Analyze API] Success — Clarity:', analysis.clarityScore, 'Fear/Logic/Gut:', analysis.fearLevel, analysis.logicLevel, analysis.gutLevel)
-    return NextResponse.json(analysis)
+    console.log('[Analyze API] Success — Clarity:', analysis.clarityScore, 'Fear/Logic/Gut:', analysis.fearLevel, analysis.logicLevel, analysis.gutLevel, 'Locked:', !hasCredits)
+    return NextResponse.json(lockAnalysis(analysis))
 
   } catch (error) {
     console.warn("[Analyze API] Gemini call failed, using heuristic fallback:", error)
     // Never return a 500 — always return something useful
-    return NextResponse.json(computeHeuristicAnalysis(answers, decision))
+    return NextResponse.json(lockAnalysis(computeHeuristicAnalysis(answers, decision)))
   }
 }
+
