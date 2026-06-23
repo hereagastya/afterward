@@ -28,7 +28,7 @@ export function ConfidenceMeter({ analysis, onContinue, decision, answers }: Con
   const [loading, setLoading] = useState(false)
 
   // Derive paywall state from API response
-  const isLocked = false
+  const isLocked = analysis.isLocked === true
 
   const handlePay = async () => {
     setLoading(true)
