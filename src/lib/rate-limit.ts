@@ -28,7 +28,7 @@ async function getOrCreateUser(userId: string, realEmail?: string) {
         clerkId: userId,
         email,
         simulationsUsed: 0,
-        simulationCredits: 1, // 1 free credit
+        simulationCredits: 0, // no free credits
       }
     })
     return newUser
